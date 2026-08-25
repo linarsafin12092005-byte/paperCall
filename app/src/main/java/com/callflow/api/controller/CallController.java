@@ -1,7 +1,8 @@
 package com.callflow.api.controller;
 
+import com.callflow.api.dto.CallResponse;
 import com.callflow.api.model.Call;
-import com.callflow.api.repository.CallRepository;
+import com.callflow.api.service.CallService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,26 +12,50 @@ import java.util.List;
 @RequestMapping("/api/calls")
 public class CallController {
 
-    private final CallRepository callRepository;
+    private final CallService callService;
 
-    public CallController(CallRepository callRepository) {
-        this.callRepository = callRepository;
+    public CallController(CallService callService) {
+        this.callService = callService;
     }
 
     @PostMapping
-    public Call createCall(@RequestBody Call call) {
-        return callRepository.save(call);
+    public ResponseEntity<CallResponse> createCall(@RequestBody Call call) {
+        return ResponseEntity.ok(callService.create(call));
     }
 
     @GetMapping
-    public List<Call> getCalls() {
-        return callRepository.findAll();
+    public List<CallResponse> getCalls() {
+        return callService.getAll();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Call> getCall(@PathVariable Long id) {
-        return callRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<CallResponse> getCall(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(callService.getById(id));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<CallResponse> updateCall(
+            @PathVariable Long id,
+            @RequestBody Call call
+    ) {
+        try {
+            return ResponseEntity.ok(callService.update(id, call));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteCall(@PathVariable Long id) {
+        try {
+            callService.delete(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
