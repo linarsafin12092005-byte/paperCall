@@ -1,19 +1,24 @@
-# CallFlow
+| #  | Этап                                       | Статус                       |
+| -- | ------------------------------------------ | ---------------------------- |
+| 1  | Spring Boot → MySQL                        | ✅                            |
+| 2  | Entity / Repository / Service / Controller | ✅                            |
+| 3  | Dockerize                                  | ✅                            |
+| 4  | Docker Compose + MySQL + volume            | ✅                            |
+| 5  | Redis                                      | ✅                            |
+| 6  | Kafka                                      | ✅                            |
+| 7  | Nginx                                      | ⏳                            |
+| 8  | Prometheus + Grafana                       | ⏳                            |
+| 9  | OpenTelemetry + Jaeger                     | ⏳                            |
+| 10 | Elasticsearch + Kibana                     | ⏳                            |
+| 11 | Asterisk + SIP                             | ⏳                            |
+| 12 | AMI / ARI                                  | ⏳                            |
+| 13 | Gitea                                      | ⏳                            |
+| 14 | Jenkins                                    | ⏳                            |
+| 15 | Harbor                                     | ⏳                            |
+| 16 | Полный CI/CD                               | ⏳                            |
+| 17 | Kubernetes                                 | ⏳ **финальный большой этап** |
+| 18 | Zabbix                                     | ⏳                            |
+| 19 | Production hardening                       | ⏳                            |
 
-CallFlow API — Spring Boot application with MySQL.
 
-## Stack
-
-- Java 21
-- Spring Boot
-- Spring Data JPA / Hibernate
-- MySQL 8.4
-- Docker / Docker Compose
-- Nginx
-
-## Run
-
-Start the application and database:
-
-```bash
-docker compose up -d
+вот ща ща ща и будет 
