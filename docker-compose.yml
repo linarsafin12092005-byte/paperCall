@@ -46,7 +46,7 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:19093
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    
+
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: callflow-kafka-ui
@@ -63,8 +63,6 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: callflow-api
-    ports:
-      - "8080:8080"
     environment:
       DB_URL: jdbc:mysql://mysql:3306/callflow
       DB_USERNAME: callflow
@@ -79,6 +77,22 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
+
+  nginx:
+    image: nginx:1.27
+    container_name: callflow-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: callflow-frontend
 
 volumes:
   mysql_data:

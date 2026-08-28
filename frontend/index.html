@@ -1,57 +1,13 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CallFlow</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-<div class="container">
-    <header>
-        <h1>CallFlow</h1>
-        <p>Contact Center Dashboard</p>
-    </header>
-
-    <section class="card">
-        <h2>Создать звонок</h2>
-
-        <form id="call-form">
-            <input
-                type="text"
-                id="phone"
-                placeholder="Номер телефона"
-                required
-            >
-
-            <input
-                type="text"
-                id="operator"
-                placeholder="Оператор"
-            >
-
-            <select id="status">
-                <option value="NEW">NEW</option>
-                <option value="IN_PROGRESS">IN_PROGRESS</option>
-                <option value="COMPLETED">COMPLETED</option>
-                <option value="FAILED">FAILED</option>
-            </select>
-
-            <button type="submit">Создать звонок</button>
-        </form>
-    </section>
-
-    <section class="card">
-        <h2>Звонки</h2>
-
-        <div id="calls">
-            Загрузка...
-        </div>
-    </section>
-</div>
-
-<script src="app.js"></script>
-
-</body>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>frontend</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
