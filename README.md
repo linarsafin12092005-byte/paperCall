@@ -6,7 +6,7 @@
 | 4  | Docker Compose + MySQL + volume            | ✅                            |
 | 5  | Redis                                      | ✅                            |
 | 6  | Kafka                                      | ✅                            |
-| 7  | Nginx                                      | ⏳                            |
+| 7  | Nginx                                      | ✅                            |
 | 8  | Prometheus + Grafana                       | ⏳                            |
 | 9  | OpenTelemetry + Jaeger                     | ⏳                            |
 | 10 | Elasticsearch + Kibana                     | ⏳                            |
