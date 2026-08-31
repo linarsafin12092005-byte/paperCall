@@ -22,3 +22,6 @@
 
 
 вот ща ща ща и будет 
+
+
+<img width="1347" height="777" alt="image" src="https://github.com/user-attachments/assets/2e56d93a-4e6c-43ce-b5c9-ecb410b130f5" />
