@@ -1,3 +1,4 @@
+import Background from './Background'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Users, Phone, UserCircle, Activity, Mail, Clock, Zap, TrendingUp } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
@@ -284,7 +285,8 @@ function App() {
   const { data: calls } = useApi('/api/calls')
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950">
+        <div className="min-h-screen text-slate-100 relative">
+      <Background />
       <header className="border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-lg sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
