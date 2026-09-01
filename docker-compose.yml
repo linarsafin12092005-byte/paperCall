@@ -67,6 +67,7 @@ services:
       DB_URL: jdbc:mysql://mysql:3306/callflow
       DB_USERNAME: callflow
       DB_PASSWORD: callflow_password
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       REDIS_HOST: redis
       REDIS_PORT: 6379
       KAFKA_BOOTSTRAP_SERVERS: kafka:19092
@@ -118,6 +119,15 @@ services:
     depends_on:
       - prometheus
 
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: callflow-jaeger
+    ports:
+      - "16686:16686"
+      - "4318:4318"
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    
 volumes:
   mysql_data:
   redis_data:
