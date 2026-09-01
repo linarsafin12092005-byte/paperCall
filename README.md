@@ -8,7 +8,7 @@
 | 6  | Kafka                                      | ✅                            |
 | 7  | Nginx                                      | ✅                            |
 | 8  | Prometheus + Grafana                       | ✅                            |
-| 9  | OpenTelemetry + Jaeger                     | ⏳                            |
+| 9  | OpenTelemetry + Jaeger                     | ✅                            |
 | 10 | Elasticsearch + Kibana                     | ⏳                            |
 | 11 | Asterisk + SIP                             | ⏳                            |
 | 12 | AMI / ARI                                  | ⏳                            |
