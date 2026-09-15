@@ -16,17 +16,17 @@ pipeline {
         }
         stage('Docker Build') {
             steps {
-                sh 'docker build -t registry:5000/callflow-api:latest .'
+                sh 'docker build -t localhost:5000/callflow-api:latest .'
             }
         }
         stage('Push to Registry') {
             steps {
-                sh 'docker push registry:5000/callflow-api:latest'
+                sh 'docker push localhost:5000/callflow-api:latest'
             }
         }
         stage('Deploy') {
             steps {
-                sh 'docker pull registry:5000/callflow-api:latest'
+                sh 'docker pull localhost:5000/callflow-api:latest'
                 sh 'docker stop callflow-api || true'
                 sh 'docker rm callflow-api || true'
                 sh '''
@@ -38,7 +38,7 @@ pipeline {
                   -e REDIS_HOST=redis \
                   -e REDIS_PORT=6379 \
                   -e KAFKA_BOOTSTRAP_SERVERS=kafka:19092 \
-                  registry:5000/callflow-api:latest
+                  localhost:5000/callflow-api:latest
                 '''
             }
         }
