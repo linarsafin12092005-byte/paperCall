@@ -23,7 +23,8 @@ pipeline {
             steps {
                 sh 'docker push registry:5000/callflow-api:latest'
             }
-	        stage('Deploy') {
+        }
+        stage('Deploy') {
             steps {
                 sh 'docker pull registry:5000/callflow-api:latest'
                 sh 'docker stop callflow-api || true'
@@ -41,3 +42,5 @@ pipeline {
                 '''
             }
         }
+    }
+}
