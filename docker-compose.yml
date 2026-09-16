@@ -50,6 +50,7 @@ services:
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: callflow-kafka-ui
+    profiles: ["observability"]
     ports:
       - "8081:8080"
     environment:
@@ -75,6 +76,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      ASTERISK_HOST: asterisk
+      ASTERISK_AMI_PORT: 5038
     depends_on:
       mysql:
         condition: service_healthy
@@ -102,6 +105,7 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: callflow-prometheus
+    profiles: ["observability"]
     ports:
       - "9090:9090"
     volumes:
@@ -113,6 +117,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: callflow-grafana
+    profiles: ["observability"]
     ports:
       - "3000:3000"
     environment:
@@ -126,19 +131,21 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:latest
     container_name: callflow-jaeger
+    profiles: ["observability"]
     ports:
       - "16686:16686"
       - "4318:4318"
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
-  
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
     container_name: callflow-elasticsearch
+    profiles: ["observability"]
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
-      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      ES_JAVA_OPTS: "-Xms256m -Xmx256m"
     ports:
       - "9200:9200"
     volumes:
@@ -152,6 +159,7 @@ services:
   kibana:
     image: docker.elastic.co/kibana/kibana:8.15.3
     container_name: callflow-kibana
+    profiles: ["observability"]
     ports:
       - "5601:5601"
     environment:
@@ -163,7 +171,9 @@ services:
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.15.3
     container_name: callflow-filebeat
+    profiles: ["observability"]
     user: root
+    command: ["--strict.perms=false"]
     volumes:
       - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -171,10 +181,63 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
-    
+
+  asterisk:
+    image: andrius/asterisk:stable
+    container_name: callflow-asterisk
+    profiles: ["telephony"]
+    ports:
+      - "5060:5060/udp"
+      - "5038:5038"
+      - "10000-10010:10000-10010/udp"
+    volumes:
+      - ./asterisk/conf/manager.conf:/etc/asterisk/manager.conf:ro
+      - ./asterisk/conf/pjsip.conf:/etc/asterisk/pjsip.conf:ro
+      - ./asterisk/conf/extensions.conf:/etc/asterisk/extensions.conf:ro
+
+  gitea:
+    image: gitea/gitea:latest
+    container_name: callflow-gitea
+    profiles: ["cicd"]
+    environment:
+      USER_UID: 1000
+      USER_GID: 1000
+      GITEA__server__DOMAIN: localhost
+      GITEA__server__ROOT_URL: http://localhost:3001/
+    ports:
+      - "3001:3000"
+      - "2222:22"
+    volumes:
+      - gitea_data:/data
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: callflow-jenkins
+    profiles: ["cicd"]
+    user: root
+    ports:
+      - "8082:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_data:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      JAVA_OPTS: "-Xmx512m"
+
+  registry:
+    image: registry:2
+    container_name: callflow-registry
+    profiles: ["cicd"]
+    ports:
+      - "5000:5000"
+    volumes:
+      - registry_data:/var/lib/registry
+
 volumes:
   mysql_data:
   redis_data:
   prometheus_data:
   grafana_data:
   es_data:
+  gitea_data:
+  jenkins_data:

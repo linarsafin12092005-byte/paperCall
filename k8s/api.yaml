@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: callflow-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: callflow-api
+  template:
+    metadata:
+      labels:
+        app: callflow-api
+    spec:
+      containers:
+        - name: api
+          image: callflow-api:k8s
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DB_URL
+              value: jdbc:mysql://mysql:3306/callflow
+            - name: DB_USERNAME
+              value: callflow
+            - name: DB_PASSWORD
+              value: callflow_password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: callflow-api
+spec:
+  type: NodePort
+  selector:
+    app: callflow-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30080
