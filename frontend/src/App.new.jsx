@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ModernLayout } from './layouts/ModernLayout'
+import { MainLayout } from './layouts/MainLayout'
 import { DashboardPage } from './pages/DashboardPage'
 import { CallsPage } from './pages/CallsPage'
 import { ContactsPage } from './pages/ContactsPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { GettingStartedPage } from './pages/GettingStartedPage'
+import { useWebSocket } from './useWebSocket'
+import { colors } from './design-system'
 
+// Custom hook for API calls
 function useApi(path, wsEnabled = false) {
   const [data, setData] = useState([])
   const [error, setError] = useState(null)
@@ -30,34 +33,7 @@ function useApi(path, wsEnabled = false) {
 }
 
 function App() {
-  const [activePage, setActivePage] = useState('dashboard')
+  const [activeTab, setActiveTab] = useState('dashboard')
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
 
-  const { data: operators, refetch: refetchOperators } = useApi('/api/operators', true)
-  const { data: clients, refetch: refetchClients } = useApi('/api/clients', true)
-  const { data: calls, refetch: refetchCalls } = useApi('/api/calls', true)
-
-  const renderPage = () => {
-    switch (activePage) {
-      case 'dashboard':
-        return <DashboardPage calls={calls} operators={operators} clients={clients} />
-      case 'calls':
-        return <CallsPage calls={calls} />
-      case 'contacts':
-        return <ContactsPage clients={clients} operators={operators} />
-      case 'profile':
-        return <ProfilePage />
-      case 'start':
-        return <GettingStartedPage />
-      default:
-        return <DashboardPage calls={calls} operators={operators} clients={clients} />
-    }
-  }
-
-  return (
-    <ModernLayout activePage={activePage} onPageChange={setActivePage}>
-      {renderPage()}
-    </ModernLayout>
-  )
-}
-
-export default App
+  // Fetch data
