@@ -10,7 +10,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #0A0A0A;
+  background: #0F1117;
   color: #FFFFFF;
 }
 
@@ -21,7 +21,7 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #161616;
+  background: #171A23;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -48,3 +48,38 @@ body {
 button {
   font-family: inherit;
 }
+
+.paper-form-control {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin-top: 4px;
+  padding: 10px 12px;
+  border: 1px solid #343A49 !important;
+  border-radius: 8px;
+  background-color: #0F1117 !important;
+  color: #F4F7FB !important;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  color-scheme: dark;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+input.paper-form-control::placeholder { color: #858D9B !important; opacity: 1; }
+select.paper-form-control {
+  padding-right: 36px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23A8B1C2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 14px 14px !important;
+}
+.paper-form-control:hover:not(:disabled) { border-color: #46516A !important; background-color: #11151E !important; }
+.paper-form-control:focus, .paper-form-control:focus-visible { outline: none !important; border-color: #3B82F6 !important; background-color: #0F1117 !important; box-shadow: 0 0 0 3px rgba(59,130,246,.24); }
+.paper-form-control:disabled { cursor: not-allowed; opacity: .58; background-color: #171A23 !important; color: #A0A0A0 !important; }
+.paper-form-control option { background-color: #171A23; color: #F4F7FB; }
+.paper-form-control:-webkit-autofill, .paper-form-control:-webkit-autofill:hover, .paper-form-control:-webkit-autofill:focus { -webkit-text-fill-color: #F4F7FB !important; box-shadow: 0 0 0 1000px #0F1117 inset !important; }

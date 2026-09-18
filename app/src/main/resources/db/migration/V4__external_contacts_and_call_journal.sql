@@ -1,0 +1,23 @@
+SET @client_email = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='clients' AND column_name='email'), 'SELECT 1', 'ALTER TABLE clients ADD COLUMN email VARCHAR(255) NULL');
+PREPARE stmt FROM @client_email; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @client_org = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='clients' AND column_name='organization'), 'SELECT 1', 'ALTER TABLE clients ADD COLUMN organization VARCHAR(255) NULL');
+PREPARE stmt FROM @client_org; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @client_note = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='clients' AND column_name='note'), 'SELECT 1', 'ALTER TABLE clients ADD COLUMN note TEXT NULL');
+PREPARE stmt FROM @client_note; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @client_archived = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='clients' AND column_name='archived'), 'SELECT 1', 'ALTER TABLE clients ADD COLUMN archived BOOLEAN NOT NULL DEFAULT FALSE');
+PREPARE stmt FROM @client_archived; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @call_initiator = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='calls' AND column_name='initiator_user_id'), 'SELECT 1', 'ALTER TABLE calls ADD COLUMN initiator_user_id BIGINT NULL');
+PREPARE stmt FROM @call_initiator; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @call_recipient = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='calls' AND column_name='recipient_user_id'), 'SELECT 1', 'ALTER TABLE calls ADD COLUMN recipient_user_id BIGINT NULL');
+PREPARE stmt FROM @call_recipient; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @call_type = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='calls' AND column_name='call_type'), 'SELECT 1', 'ALTER TABLE calls ADD COLUMN call_type VARCHAR(32) NULL');
+PREPARE stmt FROM @call_type; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @call_topic = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='calls' AND column_name='topic'), 'SELECT 1', 'ALTER TABLE calls ADD COLUMN topic VARCHAR(255) NULL');
+PREPARE stmt FROM @call_topic; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @call_note = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='calls' AND column_name='note'), 'SELECT 1', 'ALTER TABLE calls ADD COLUMN note TEXT NULL');
+PREPARE stmt FROM @call_note; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @call_planned = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='calls' AND column_name='planned_at'), 'SELECT 1', 'ALTER TABLE calls ADD COLUMN planned_at DATETIME NULL');
+PREPARE stmt FROM @call_planned; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @call_legacy = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='calls' AND column_name='legacy_demo'), 'SELECT 1', 'ALTER TABLE calls ADD COLUMN legacy_demo BOOLEAN NOT NULL DEFAULT FALSE');
+PREPARE stmt FROM @call_legacy; EXECUTE stmt; DEALLOCATE PREPARE stmt;

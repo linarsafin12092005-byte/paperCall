@@ -1,17 +1,15 @@
 import { useState } from 'react'
 import { colors, spacing, borderRadius, typography, transitions } from '../design-system/tokens'
-import { User, Server, Key, Copy, Eye, EyeOff, CheckCircle } from 'lucide-react'
+import { User, Server, Key, Copy, Eye, EyeOff, CheckCircle, LogOut, Settings } from 'lucide-react'
 
-export function ProfilePage() {
+export function ProfilePage({ user, onLogout, onEditProfile }) {
   const [showPassword, setShowPassword] = useState(false)
   const [copied, setCopied] = useState('')
 
-  const user = {
-    fullName: 'Иван Иванов',
-    email: 'ivan@papercall.com',
+  const sipConfig = {
     sipServer: window.location.hostname,
-    sipExtension: '1001',
-    sipPassword: 'secret123',
+    sipExtension: user?.sipExtension || user?.username || '1001',
+    sipPassword: user?.sipPassword || '********',
   }
 
   const copyToClipboard = (text, field) => {
@@ -21,9 +19,9 @@ export function ProfilePage() {
   }
 
   const copyAllCredentials = () => {
-    const credentials = `SIP Server: ${user.sipServer}:5060
-Extension: ${user.sipExtension}
-Password: ${user.sipPassword}`
+    const credentials = `SIP Server: ${sipConfig.sipServer}:5060
+Extension: ${sipConfig.sipExtension}
+Password: ${sipConfig.sipPassword}`
     navigator.clipboard.writeText(credentials)
     setCopied('all')
     setTimeout(() => setCopied(''), 2000)
@@ -32,21 +30,56 @@ Password: ${user.sipPassword}`
   return (
     <div>
       {/* Header */}
-      <div style={{ marginBottom: spacing[8] }}>
-        <h1 style={{
-          fontSize: typography.fontSize['2xl'],
-          fontWeight: typography.fontWeight.semibold,
-          color: colors.textPrimary,
-          marginBottom: spacing[2],
-        }}>
-          Профиль
-        </h1>
-        <p style={{
-          fontSize: typography.fontSize.sm,
-          color: colors.textSecondary,
-        }}>
-          Информация о вашей учетной записи и SIP настройках
-        </p>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: spacing[8],
+      }}>
+        <div>
+          <h1 style={{
+            fontSize: typography.fontSize['2xl'],
+            fontWeight: typography.fontWeight.semibold,
+            color: colors.textPrimary,
+            marginBottom: spacing[2],
+          }}>
+            Профиль
+          </h1>
+          <p style={{
+            fontSize: typography.fontSize.sm,
+            color: colors.textSecondary,
+          }}>
+            Информация о вашей учетной записи и SIP настройках
+          </p>
+        </div>
+        <button
+          onClick={onEditProfile}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing[2],
+            padding: `${spacing[2]} ${spacing[4]}`,
+            background: colors.accent,
+            border: 'none',
+            borderRadius: borderRadius.md,
+            color: colors.textPrimary,
+            fontSize: typography.fontSize.sm,
+            fontWeight: typography.fontWeight.medium,
+            cursor: 'pointer',
+            transition: transitions.fast,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = colors.accentHover
+            e.currentTarget.style.transform = 'translateY(-1px)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = colors.accent
+            e.currentTarget.style.transform = 'translateY(0)'
+          }}
+        >
+          <Settings size={16} />
+          Редактировать
+        </button>
       </div>
 
       {/* User Info Card */}
@@ -67,32 +100,58 @@ Password: ${user.sipPassword}`
             width: '80px',
             height: '80px',
             borderRadius: borderRadius.full,
-            background: colors.accent,
+            background: user?.avatarUrl
+              ? `url(${user.avatarUrl}) center/cover`
+              : colors.accent,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: '36px',
             fontWeight: typography.fontWeight.semibold,
             color: colors.textPrimary,
+            overflow: 'hidden',
           }}>
-            {user.fullName.charAt(0)}
+            {!user?.avatarUrl && (user?.fullName?.charAt(0)?.toUpperCase() || 'U')}
           </div>
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
               fontSize: typography.fontSize.xl,
               fontWeight: typography.fontWeight.semibold,
               color: colors.textPrimary,
               marginBottom: spacing[1],
             }}>
-              {user.fullName}
+              {user?.fullName || 'Пользователь'}
             </div>
             <div style={{
               fontSize: typography.fontSize.base,
               color: colors.textSecondary,
+              wordBreak: 'break-all',
             }}>
-              {user.email}
+              {user?.email || 'user@papercall.com'}
             </div>
           </div>
+          <button
+            onClick={onLogout}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: spacing[2],
+              padding: `${spacing[2]} ${spacing[4]}`,
+              background: colors.dangerLight,
+              border: `1px solid ${colors.danger}`,
+              borderRadius: borderRadius.md,
+              color: colors.danger,
+              fontSize: typography.fontSize.sm,
+              fontWeight: typography.fontWeight.medium,
+              cursor: 'pointer',
+              transition: transitions.fast,
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = colors.danger}
+            onMouseLeave={(e) => e.currentTarget.style.background = colors.dangerLight}
+          >
+            <LogOut size={16} />
+            Выйти
+          </button>
         </div>
       </div>
 
@@ -168,10 +227,10 @@ Password: ${user.sipPassword}`
                 color: colors.textPrimary,
                 fontFamily: 'monospace',
               }}>
-                {user.sipServer}:5060
+                {sipConfig.sipServer}:5060
               </code>
               <button
-                onClick={() => copyToClipboard(`${user.sipServer}:5060`, 'server')}
+                onClick={() => copyToClipboard(`${sipConfig.sipServer}:5060`, 'server')}
                 style={{
                   padding: spacing[2],
                   background: 'transparent',
@@ -215,10 +274,10 @@ Password: ${user.sipPassword}`
                 color: colors.textPrimary,
                 fontFamily: 'monospace',
               }}>
-                {user.sipExtension}
+                {sipConfig.sipExtension}
               </code>
               <button
-                onClick={() => copyToClipboard(user.sipExtension, 'extension')}
+                onClick={() => copyToClipboard(sipConfig.sipExtension, 'extension')}
                 style={{
                   padding: spacing[2],
                   background: 'transparent',
@@ -262,7 +321,7 @@ Password: ${user.sipPassword}`
                 color: colors.textPrimary,
                 fontFamily: 'monospace',
               }}>
-                {showPassword ? user.sipPassword : '••••••••'}
+                {showPassword ? sipConfig.sipPassword : '••••••••'}
               </code>
               <button
                 onClick={() => setShowPassword(!showPassword)}
@@ -278,7 +337,7 @@ Password: ${user.sipPassword}`
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
               <button
-                onClick={() => copyToClipboard(user.sipPassword, 'password')}
+                onClick={() => copyToClipboard(sipConfig.sipPassword, 'password')}
                 style={{
                   padding: spacing[2],
                   background: 'transparent',

@@ -16,6 +16,11 @@ public class Client {
     @Column(nullable = false, unique = true)
     private String phoneNumber;
 
+    private String email;
+    private String organization;
+    private String note;
+    private boolean archived = false;
+
     protected Client() {
     }
 
@@ -43,4 +48,13 @@ public class Client {
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public String getOrganization() { return organization; }
+    public void setOrganization(String organization) { this.organization = organization; }
+    public String getNote() { return note; }
+    public void setNote(String note) { this.note = note; }
+    public boolean isArchived() { return archived; }
+    public void setArchived(boolean archived) { this.archived = archived; }
 }

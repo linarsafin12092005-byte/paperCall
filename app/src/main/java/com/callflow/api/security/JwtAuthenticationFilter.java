@@ -1,5 +1,7 @@
 package com.callflow.api.security;
 
+import com.callflow.api.user.UserRepository;
+import com.callflow.api.user.User;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,14 +15,17 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
+    private final UserRepository userRepository;
 
-    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider) {
+    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, UserRepository userRepository) {
         this.tokenProvider = tokenProvider;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -31,19 +36,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (token != null && tokenProvider.validateToken(token)) {
             String email = tokenProvider.getEmailFromToken(token);
-            String role = tokenProvider.getClaims(token).get("role", String.class);
+            Optional<User> user = userRepository.findByEmail(email).filter(User::isActive);
+            if (user.isEmpty()) {
+                filterChain.doFilter(request, response);
+                return;
+            }
 
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    email,
-                    null,
-                    List.of(new SimpleGrantedAuthority("ROLE_" + role))
-            );
-
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            email,
+                            null,
+                            List.of(new SimpleGrantedAuthority("ROLE_" + user.get().getRole().name()))
+                    );
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            if (user.get().isMustChangePassword() && !isPasswordChangeAllowed(request)) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\":\"Требуется сменить временный пароль\"}");
+                return;
+            }
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isPasswordChangeAllowed(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.equals("/api/auth/me")
+                || path.equals("/api/users/me")
+                || path.startsWith("/api/users/avatars/");
     }
 
     private String getTokenFromRequest(HttpServletRequest request) {

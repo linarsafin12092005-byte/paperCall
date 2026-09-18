@@ -8,7 +8,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
     Optional<User> findBySipExtension(String sipExtension);
     boolean existsByEmail(String email);
+    long countByRole(UserRole role);
+    java.util.List<User> findAllByOrderByIdAsc();
 
-    @Query("SELECT MAX(CAST(u.sipExtension AS int)) FROM User u WHERE u.sipExtension IS NOT NULL AND u.sipExtension REGEXP '^[0-9]+$'")
+    @Query(value = "SELECT MAX(CAST(u.sip_extension AS UNSIGNED)) FROM users u WHERE u.sip_extension IS NOT NULL AND u.sip_extension REGEXP '^[0-9]+$'", nativeQuery = true)
     Integer findMaxNumericExtension();
 }

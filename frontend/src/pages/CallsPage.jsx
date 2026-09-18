@@ -1,317 +1,80 @@
-import { useState, useMemo } from 'react'
-import { colors, spacing, borderRadius, typography, transitions } from '../design-system/tokens'
-import { Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, Search, Plus } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { CalendarClock, CheckCircle2, Phone, Plus, Search, XCircle } from 'lucide-react'
+import { colors, spacing, borderRadius, typography } from '../design-system/tokens'
+import { CreateCallModal } from '../components/CreateCallModal'
 
-function CallItem({ call }) {
-  const statusConfig = {
-    FINISHED: { label: 'Завершен', color: colors.success, bg: colors.successLight, icon: Phone },
-    FAILED: { label: 'Не отвечен', color: colors.danger, bg: colors.dangerLight, icon: PhoneMissed },
-    ANSWERED: { label: 'Активен', color: colors.warning, bg: colors.warningLight, icon: Phone },
-    RINGING: { label: 'Звонит', color: colors.warning, bg: colors.warningLight, icon: PhoneIncoming },
+const statusLabels = {
+  PLANNED: 'Запланирован',
+  INITIATED: 'Подготовка звонка',
+  RINGING: 'Выполняется вызов',
+  ANSWERED: 'Принят',
+  COMPLETED: 'Завершён',
+  FINISHED: 'Завершён',
+  FAILED: 'Ошибка',
+  CANCELLED: 'Отменён',
+  LEGACY: 'Архивная тестовая запись',
+}
+
+export function CallsPage({ calls = [], clients = [], user, onCallCreated }) {
+  const [filter, setFilter] = useState('all')
+  const [query, setQuery] = useState('')
+  const [createOpen, setCreateOpen] = useState(false)
+  const filtered = useMemo(() => calls.filter((call) => {
+    const haystack = [call.initiatorName, call.recipientName, call.clientName, call.clientPhone, call.topic, call.note].join(' ').toLowerCase()
+    const matchesQuery = haystack.includes(query.toLowerCase())
+    const isArchive = call.legacyDemo || call.status === 'LEGACY'
+    const matchesArchiveAccess = !isArchive || filter === 'legacy'
+    const matchesFilter = matchesArchiveAccess && (filter === 'all' || (filter === 'legacy' ? isArchive : filter === 'planned' ? ['PLANNED', 'INITIATED'].includes(call.status) : filter === 'completed' ? ['COMPLETED', 'FINISHED'].includes(call.status) : true))
+    return matchesQuery && matchesFilter
+  }), [calls, query, filter])
+
+  const updateStatus = async (call, status) => {
+    const response = await fetch(`/api/calls/${call.id}/status?status=${status}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    })
+    if (response.ok) onCallCreated?.()
   }
 
-  const status = statusConfig[call.status] || statusConfig.FAILED
-  const StatusIcon = status.icon
-
-  return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: spacing[4],
-      padding: spacing[4],
-      background: colors.surface,
-      border: `1px solid ${colors.border}`,
-      borderRadius: borderRadius.lg,
-      transition: transitions.base,
-      cursor: 'pointer',
-    }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = colors.accent
-        e.currentTarget.style.transform = 'translateY(-2px)'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = colors.border
-        e.currentTarget.style.transform = 'translateY(0)'
-      }}
-    >
-      {/* Avatar */}
-      <div style={{
-        width: '48px',
-        height: '48px',
-        borderRadius: borderRadius.full,
-        background: colors.accent,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: typography.fontSize.lg,
-        fontWeight: typography.fontWeight.semibold,
-        color: colors.textPrimary,
-        flexShrink: 0,
-      }}>
-        {call.client?.fullName?.charAt(0) || '?'}
-      </div>
-
-      {/* Content */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontSize: typography.fontSize.base,
-          fontWeight: typography.fontWeight.semibold,
-          color: colors.textPrimary,
-          marginBottom: spacing[1],
-        }}>
-          {call.client?.fullName || 'Неизвестный контакт'}
-        </div>
-        <div style={{
-          fontSize: typography.fontSize.sm,
-          color: colors.textSecondary,
-          display: 'flex',
-          alignItems: 'center',
-          gap: spacing[3],
-        }}>
-          <span>
-            {new Date(call.createdAt).toLocaleString('ru-RU', {
-              day: '2-digit',
-              month: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </span>
-          {call.duration && (
-            <>
-              <span>•</span>
-              <span>{Math.floor(call.duration / 60)}:{(call.duration % 60).toString().padStart(2, '0')}</span>
-            </>
-          )}
-          <span>•</span>
-          <span>{call.operator?.fullName || 'Не назначен'}</span>
-        </div>
-      </div>
-
-      {/* Status */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: spacing[2],
-        padding: `${spacing[2]} ${spacing[3]}`,
-        borderRadius: borderRadius.md,
-        background: status.bg,
-        color: status.color,
-        fontSize: typography.fontSize.sm,
-        fontWeight: typography.fontWeight.medium,
-      }}>
-        <StatusIcon size={16} />
-        {status.label}
-      </div>
-    </div>
-  )
+  return <section>
+    <header style={headerStyle}><div><h1 style={titleStyle}>Звонки</h1><p style={subtitleStyle}>Планирование и журнал внутренних и внешних звонков</p></div><button type="button" style={primary} onClick={() => setCreateOpen(true)}><Plus size={17} /> Создать запись</button></header>
+    <div style={infoStyle}>Телефония Asterisk ещё не подключена. Новые записи создаются как «Запланирован» и не имитируют дозвон.</div>
+    <div style={toolbar}><div style={searchWrap}><Search size={17} color={colors.textTertiary} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск по участникам, теме или заметке" style={searchInput} /></div><div style={filters}>{[['all', 'Все'], ['planned', 'Планируемые'], ['completed', 'Завершённые'], ...(['ADMIN', 'SUPER_ADMIN'].includes(user?.role) ? [['legacy', 'Архивные записи']] : [])].map(([id, label]) => <button key={id} type="button" onClick={() => setFilter(id)} style={filter === id ? activeFilter : filterStyle}>{label}</button>)}</div></div>
+    {filtered.length === 0 ? <div style={empty}><CalendarClock size={36} color={colors.textTertiary} /><h2>Записей звонков нет</h2><p>Создайте планируемую запись с конкретным сотрудником или внешним контактом.</p></div> : <div style={list}>{filtered.map((call) => <CallRow key={call.id} call={call} onStatus={updateStatus} />)}</div>}
+    {createOpen && <CreateCallModal clients={clients} currentUser={user} onClose={() => setCreateOpen(false)} onCreated={onCallCreated} />}
+  </section>
 }
 
-export function CallsPage({ calls = [] }) {
-  const [filter, setFilter] = useState('all')
-  const [searchQuery, setSearchQuery] = useState('')
-
-  const filteredCalls = useMemo(() => {
-    let filtered = [...calls]
-
-    // Фильтр по статусу
-    if (filter === 'answered') {
-      filtered = filtered.filter(c => c.status === 'FINISHED' || c.status === 'ANSWERED')
-    } else if (filter === 'missed') {
-      filtered = filtered.filter(c => c.status === 'FAILED')
-    } else if (filter === 'active') {
-      filtered = filtered.filter(c => c.status === 'RINGING' || c.status === 'ANSWERED')
-    }
-
-    // Поиск
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase()
-      filtered = filtered.filter(c =>
-        c.client?.fullName?.toLowerCase().includes(q) ||
-        c.operator?.fullName?.toLowerCase().includes(q)
-      )
-    }
-
-    // Сортировка по дате (новые первые)
-    return filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-  }, [calls, filter, searchQuery])
-
-  const stats = useMemo(() => {
-    return {
-      all: calls.length,
-      answered: calls.filter(c => c.status === 'FINISHED').length,
-      missed: calls.filter(c => c.status === 'FAILED').length,
-      active: calls.filter(c => c.status === 'RINGING' || c.status === 'ANSWERED').length,
-    }
-  }, [calls])
-
-  const filters = [
-    { id: 'all', label: 'Все', count: stats.all },
-    { id: 'answered', label: 'Отвеченные', count: stats.answered },
-    { id: 'missed', label: 'Пропущенные', count: stats.missed },
-    { id: 'active', label: 'Активные', count: stats.active },
-  ]
-
-  return (
-    <div>
-      {/* Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: spacing[6],
-      }}>
-        <div>
-          <h1 style={{
-            fontSize: typography.fontSize['2xl'],
-            fontWeight: typography.fontWeight.semibold,
-            color: colors.textPrimary,
-            marginBottom: spacing[2],
-          }}>
-            Звонки
-          </h1>
-          <p style={{
-            fontSize: typography.fontSize.sm,
-            color: colors.textSecondary,
-          }}>
-            История всех звонков контакт-центра
-          </p>
-        </div>
-        <button style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: spacing[2],
-          padding: `${spacing[2]} ${spacing[4]}`,
-          background: colors.accent,
-          border: 'none',
-          borderRadius: borderRadius.md,
-          color: colors.textPrimary,
-          fontSize: typography.fontSize.sm,
-          fontWeight: typography.fontWeight.medium,
-          cursor: 'pointer',
-          transition: transitions.fast,
-        }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = colors.accentHover
-            e.currentTarget.style.transform = 'translateY(-1px)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = colors.accent
-            e.currentTarget.style.transform = 'translateY(0)'
-          }}
-        >
-          <Plus size={18} />
-          Новый звонок
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div style={{
-        display: 'flex',
-        gap: spacing[2],
-        marginBottom: spacing[6],
-      }}>
-        {filters.map(f => (
-          <button
-            key={f.id}
-            onClick={() => setFilter(f.id)}
-            style={{
-              padding: `${spacing[2]} ${spacing[4]}`,
-              background: filter === f.id ? colors.surfaceHover : colors.surface,
-              border: `1px solid ${filter === f.id ? colors.accent : colors.border}`,
-              borderRadius: borderRadius.md,
-              color: filter === f.id ? colors.textPrimary : colors.textSecondary,
-              fontSize: typography.fontSize.sm,
-              fontWeight: typography.fontWeight.medium,
-              cursor: 'pointer',
-              transition: transitions.fast,
-            }}
-            onMouseEnter={(e) => {
-              if (filter !== f.id) {
-                e.currentTarget.style.borderColor = colors.borderHover
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (filter !== f.id) {
-                e.currentTarget.style.borderColor = colors.border
-              }
-            }}
-          >
-            {f.label} <span style={{ color: colors.textTertiary }}>({f.count})</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Search */}
-      <div style={{
-        position: 'relative',
-        marginBottom: spacing[6],
-        maxWidth: '400px',
-      }}>
-        <Search
-          size={18}
-          style={{
-            position: 'absolute',
-            left: spacing[3],
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: colors.textTertiary,
-          }}
-        />
-        <input
-          type="text"
-          placeholder="Поиск по имени..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{
-            width: '100%',
-            padding: `${spacing[2]} ${spacing[3]} ${spacing[2]} ${spacing[10]}`,
-            background: colors.surface,
-            border: `1px solid ${colors.border}`,
-            borderRadius: borderRadius.md,
-            color: colors.textPrimary,
-            fontSize: typography.fontSize.sm,
-            outline: 'none',
-            transition: transitions.fast,
-          }}
-          onFocus={(e) => e.currentTarget.style.borderColor = colors.accent}
-          onBlur={(e) => e.currentTarget.style.borderColor = colors.border}
-        />
-      </div>
-
-      {/* Calls list */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: spacing[3],
-      }}>
-        {filteredCalls.length === 0 ? (
-          <div style={{
-            padding: spacing[12],
-            textAlign: 'center',
-            background: colors.surface,
-            border: `1px solid ${colors.border}`,
-            borderRadius: borderRadius.lg,
-          }}>
-            <Phone size={48} color={colors.textTertiary} style={{ marginBottom: spacing[4] }} />
-            <div style={{
-              fontSize: typography.fontSize.lg,
-              fontWeight: typography.fontWeight.medium,
-              color: colors.textSecondary,
-              marginBottom: spacing[2],
-            }}>
-              Пока нет звонков
-            </div>
-            <div style={{
-              fontSize: typography.fontSize.sm,
-              color: colors.textTertiary,
-            }}>
-              {searchQuery || filter !== 'all' ? 'Попробуйте изменить фильтры' : 'Начните новый звонок используя кнопку выше'}
-            </div>
-          </div>
-        ) : (
-          filteredCalls.map(call => <CallItem key={call.id} call={call} />)
-        )}
-      </div>
-    </div>
-  )
+function CallRow({ call, onStatus }) {
+  const status = statusLabels[call.status] || 'Статус не указан'
+  const recipient = call.recipientName || call.clientName || 'Получатель не указан'
+  const number = call.recipientNumber || call.clientPhone || '—'
+  const callType = call.callType === 'INTERNAL' ? 'Внутренний' : call.callType === 'EXTERNAL' ? 'Внешний' : 'Архивная запись'
+  return <article style={row}><div style={callIcon}><Phone size={18} /></div><div style={main}><div style={rowTop}><strong style={name}>{recipient}</strong><span style={statusBadge(call.status)}>{status}</span></div><div style={details}><span>Инициатор: {call.initiatorName || 'Историческая запись'}</span><span>Тип: {callType}</span><span>Номер: {number}</span></div>{call.topic && <div style={muted}>Причина: {call.topic}</div>}{call.note && <div style={muted}>Заметка: {call.note}</div>}<div style={muted}>{new Date(call.plannedAt || call.createdAt).toLocaleString('ru-RU')}</div>{!call.legacyDemo && call.status === 'PLANNED' && <div style={rowActions}><button type="button" style={actionButton} onClick={() => onStatus(call, 'COMPLETED')}>Отметить завершённым</button><button type="button" style={cancelButton} onClick={() => onStatus(call, 'CANCELLED')}>Отменить</button></div>}</div>{call.legacyDemo ? <span style={legacyBadge}>Архив</span> : call.status === 'COMPLETED' ? <CheckCircle2 color={colors.success} size={18} /> : call.status === 'CANCELLED' ? <XCircle color={colors.danger} size={18} /> : null}</article>
 }
+
+const headerStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: spacing[4], marginBottom: spacing[5], flexWrap: 'wrap' }
+const titleStyle = { margin: 0, color: colors.textPrimary, fontSize: typography.fontSize['2xl'] }
+const subtitleStyle = { margin: `${spacing[2]} 0 0`, color: colors.textSecondary }
+const primary = { display: 'inline-flex', alignItems: 'center', gap: spacing[2], padding: `${spacing[2]} ${spacing[3]}`, background: colors.accent, border: 'none', borderRadius: borderRadius.md, color: colors.textPrimary, cursor: 'pointer' }
+const infoStyle = { marginBottom: spacing[4], padding: spacing[3], background: colors.warningLight, borderRadius: borderRadius.md, color: colors.warning, fontSize: typography.fontSize.sm }
+const toolbar = { display: 'flex', gap: spacing[3], alignItems: 'center', flexWrap: 'wrap', marginBottom: spacing[5] }
+const searchWrap = { display: 'flex', alignItems: 'center', gap: spacing[2], flex: '1 1 320px', padding: `${spacing[2]} ${spacing[3]}`, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: borderRadius.md }
+const searchInput = { flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', color: colors.textPrimary, font: 'inherit' }
+const filters = { display: 'flex', gap: spacing[2], flexWrap: 'wrap' }
+const filterStyle = { padding: `${spacing[2]} ${spacing[3]}`, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: borderRadius.md, color: colors.textSecondary, cursor: 'pointer' }
+const activeFilter = { ...filterStyle, borderColor: colors.accent, color: colors.textPrimary, background: colors.accentLight }
+const list = { display: 'grid', gap: spacing[3] }
+const row = { display: 'flex', alignItems: 'flex-start', gap: spacing[3], padding: spacing[4], background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: borderRadius.lg }
+const callIcon = { width: '36px', height: '36px', display: 'grid', placeItems: 'center', borderRadius: borderRadius.full, background: colors.accentLight, color: colors.accent, flexShrink: 0 }
+const main = { flex: 1, minWidth: 0 }
+const rowTop = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: spacing[3], flexWrap: 'wrap' }
+const name = { color: colors.textPrimary }
+const details = { display: 'flex', gap: spacing[3], flexWrap: 'wrap', marginTop: spacing[2], color: colors.textSecondary, fontSize: typography.fontSize.sm }
+const muted = { marginTop: spacing[2], color: colors.textTertiary, fontSize: typography.fontSize.sm }
+const statusBadge = (status) => ({ padding: `${spacing[1]} ${spacing[2]}`, borderRadius: borderRadius.md, background: ['COMPLETED', 'FINISHED'].includes(status) ? colors.successLight : status === 'FAILED' ? colors.dangerLight : colors.warningLight, color: ['COMPLETED', 'FINISHED'].includes(status) ? colors.success : status === 'FAILED' ? colors.danger : colors.warning, fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.semibold })
+const legacyBadge = { color: colors.textTertiary, fontSize: typography.fontSize.xs }
+const empty = { padding: spacing[8], textAlign: 'center', background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: borderRadius.lg, color: colors.textSecondary }
+const rowActions = { display: 'flex', gap: spacing[2], marginTop: spacing[3] }
+const actionButton = { padding: `${spacing[1]} ${spacing[2]}`, background: colors.successLight, border: `1px solid ${colors.success}`, borderRadius: borderRadius.md, color: colors.success, cursor: 'pointer', fontSize: typography.fontSize.xs }
+const cancelButton = { ...actionButton, background: colors.dangerLight, borderColor: colors.danger, color: colors.danger }

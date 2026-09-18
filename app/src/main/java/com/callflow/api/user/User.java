@@ -29,6 +29,18 @@ public class User {
     @Column
     private String phoneNumber;
 
+    @Column
+    private String avatarFilename;
+
+    @Column(nullable = false)
+    private boolean active = true;
+
+    @Column
+    private LocalDateTime blockedAt;
+
+    @Column(nullable = false)
+    private boolean mustChangePassword = false;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role = UserRole.USER;
@@ -100,6 +112,43 @@ public class User {
 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    public String getAvatarFilename() {
+        return avatarFilename;
+    }
+
+    public void setAvatarFilename(String avatarFilename) {
+        this.avatarFilename = avatarFilename;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+        if (active) {
+            this.blockedAt = null;
+        } else if (this.blockedAt == null) {
+            this.blockedAt = LocalDateTime.now();
+        }
+    }
+
+    public LocalDateTime getBlockedAt() {
+        return blockedAt;
+    }
+
+    public void setBlockedAt(LocalDateTime blockedAt) {
+        this.blockedAt = blockedAt;
+    }
+
+    public boolean isMustChangePassword() {
+        return mustChangePassword;
+    }
+
+    public void setMustChangePassword(boolean mustChangePassword) {
+        this.mustChangePassword = mustChangePassword;
     }
 
     public UserRole getRole() {

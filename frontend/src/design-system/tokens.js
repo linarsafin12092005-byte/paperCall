@@ -2,21 +2,22 @@
 
 export const colors = {
   // Background
-  bg: '#0A0A0A',
-  surface: '#161616',
-  surfaceHover: '#1F1F1F',
+  bg: '#0F1117',
+  surface: '#171A23',
+  surfaceHover: '#1F2330',
 
   // Borders
-  border: '#2A2A2A',
-  borderHover: '#3A3A3A',
+  border: '#2A2E3C',
+  borderHover: '#3A3F52',
 
   // Text
   textPrimary: '#FFFFFF',
   textSecondary: '#A0A0A0',
   textTertiary: '#6B6B6B',
 
-  // Accent - Blue
+  // Accent - Blue to Cyan gradient
   accent: '#3B82F6',
+  accentCyan: '#06B6D4',
   accentHover: '#2563EB',
   accentLight: 'rgba(59, 130, 246, 0.1)',
 
@@ -27,6 +28,16 @@ export const colors = {
   dangerLight: 'rgba(239, 68, 68, 0.1)',
   warning: '#F59E0B',
   warningLight: 'rgba(245, 158, 11, 0.1)',
+  roleUser: '#60A5FA',
+  roleUserLight: 'rgba(96, 165, 250, 0.14)',
+  roleAdmin: '#C084FC',
+  roleAdminLight: 'rgba(192, 132, 252, 0.16)',
+  roleSuperAdmin: '#FBBF24',
+  roleSuperAdminLight: 'rgba(251, 191, 36, 0.16)',
+  roleOperator: '#2DD4BF',
+  roleOperatorLight: 'rgba(45, 212, 191, 0.15)',
+  gray: '#6B7280',
+  grayLight: 'rgba(107, 114, 128, 0.1)',
 }
 
 export const typography = {

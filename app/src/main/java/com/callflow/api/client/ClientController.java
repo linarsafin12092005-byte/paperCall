@@ -1,6 +1,7 @@
 package com.callflow.api.client;
 
 import org.springframework.http.HttpStatus;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,7 +28,17 @@ public class ClientController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Client create(@RequestBody Client client) {
-        return clientService.create(client);
+    public Client create(@Valid @RequestBody ClientRequest request) {
+        return clientService.create(request);
+    }
+
+    @PutMapping("/{id}")
+    public Client update(@PathVariable Long id, @Valid @RequestBody ClientRequest request) {
+        return clientService.update(id, request);
+    }
+
+    @PatchMapping("/{id}/archive")
+    public Client archive(@PathVariable Long id) {
+        return clientService.archive(id);
     }
 }

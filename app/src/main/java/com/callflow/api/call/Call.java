@@ -2,6 +2,7 @@ package com.callflow.api.call;
 
 import com.callflow.api.client.Client;
 import com.callflow.api.operator.Operator;
+import com.callflow.api.user.User;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -14,7 +15,7 @@ public class Call {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
+    @ManyToOne
     @JoinColumn(name = "client_id", nullable = false)
     private Client client;
 
@@ -22,9 +23,17 @@ public class Call {
     @JoinColumn(name = "operator_id")
     private Operator operator;
 
+    @ManyToOne
+    @JoinColumn(name = "initiator_user_id")
+    private User initiator;
+
+    @ManyToOne
+    @JoinColumn(name = "recipient_user_id")
+    private User recipient;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private CallStatus status = CallStatus.RINGING;
+    private CallStatus status = CallStatus.PLANNED;
 
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -32,6 +41,13 @@ public class Call {
     private LocalDateTime answeredAt;
 
     private LocalDateTime finishedAt;
+
+    private String callType;
+    private String topic;
+    @Column(columnDefinition = "TEXT")
+    private String note;
+    private LocalDateTime plannedAt;
+    private boolean legacyDemo;
 
     protected Call() {
     }
@@ -59,6 +75,21 @@ public class Call {
     public void setOperator(Operator operator) {
         this.operator = operator;
     }
+
+    public User getInitiator() { return initiator; }
+    public void setInitiator(User initiator) { this.initiator = initiator; }
+    public User getRecipient() { return recipient; }
+    public void setRecipient(User recipient) { this.recipient = recipient; }
+    public String getCallType() { return callType; }
+    public void setCallType(String callType) { this.callType = callType; }
+    public String getTopic() { return topic; }
+    public void setTopic(String topic) { this.topic = topic; }
+    public String getNote() { return note; }
+    public void setNote(String note) { this.note = note; }
+    public LocalDateTime getPlannedAt() { return plannedAt; }
+    public void setPlannedAt(LocalDateTime plannedAt) { this.plannedAt = plannedAt; }
+    public boolean isLegacyDemo() { return legacyDemo; }
+    public void setLegacyDemo(boolean legacyDemo) { this.legacyDemo = legacyDemo; }
 
     public CallStatus getStatus() {
         return status;

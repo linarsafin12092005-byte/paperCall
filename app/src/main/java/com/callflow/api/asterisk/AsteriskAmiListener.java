@@ -13,9 +13,11 @@ import org.asteriskjava.manager.event.HangupEvent;
 import org.asteriskjava.manager.event.ManagerEvent;
 import org.asteriskjava.manager.event.NewChannelEvent;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(name = "asterisk.enabled", havingValue = "true", matchIfMissing = false)
 public class AsteriskAmiListener implements ManagerEventListener {
 
     @Value("${asterisk.ami.host}")

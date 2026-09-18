@@ -7,6 +7,10 @@ import com.callflow.api.event.CallEventProducer;
 import com.callflow.api.event.CallEventType;
 import com.callflow.api.operator.Operator;
 import com.callflow.api.operator.OperatorRepository;
+import com.callflow.api.user.User;
+import com.callflow.api.user.UserRepository;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -19,19 +23,35 @@ public class CallService {
     private final ClientRepository clientRepository;
     private final OperatorRepository operatorRepository;
     private final CallEventProducer callEventProducer;
+    private final UserRepository userRepository;
 
     public CallService(CallRepository callRepository,
                         ClientRepository clientRepository,
                         OperatorRepository operatorRepository,
-                        CallEventProducer callEventProducer) {
+                        CallEventProducer callEventProducer,
+                        UserRepository userRepository) {
         this.callRepository = callRepository;
         this.clientRepository = clientRepository;
         this.operatorRepository = operatorRepository;
         this.callEventProducer = callEventProducer;
+        this.userRepository = userRepository;
     }
 
-    public List<Call> getAll() {
-        return callRepository.findAll();
+    public List<Call> getAll(String actorEmail) {
+        User actor = requiredUser(actorEmail);
+        if (actor.getRole().name().equals("ADMIN") || actor.getRole().name().equals("SUPER_ADMIN")) {
+            return callRepository.findAll();
+        }
+        return callRepository.findAll().stream()
+                .filter(call -> call.getInitiator() != null && actor.getId().equals(call.getInitiator().getId())
+                        || call.getRecipient() != null && actor.getId().equals(call.getRecipient().getId()))
+                .toList();
+    }
+
+    public Call getByIdForActor(String actorEmail, Long id) {
+        Call call = getById(id);
+        ensureAccess(actorEmail, call);
+        return call;
     }
 
     public Call getById(Long id) {
@@ -39,16 +59,57 @@ public class CallService {
                 .orElseThrow(() -> new RuntimeException("Call not found: " + id));
     }
 
-    public Call createForClient(Long clientId) {
-        Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new RuntimeException("Client not found: " + clientId));
-        Call call = new Call(client);
+    @Transactional
+    public Call create(String actorEmail, CallRequest request) {
+        User initiator = requiredUser(actorEmail);
+        Call call = new Call();
+        call.setInitiator(initiator);
+        call.setCallType(request.callType().toUpperCase());
+        call.setTopic(request.topic());
+        call.setNote(request.note());
+        call.setPlannedAt(request.plannedAt());
+        call.setStatus(CallStatus.PLANNED);
+        if ("INTERNAL".equalsIgnoreCase(request.callType())) {
+            if (request.recipientUserId() == null) throw new IllegalArgumentException("Укажите сотрудника-получателя");
+            call.setRecipient(requiredUser(request.recipientUserId()));
+        } else if ("EXTERNAL".equalsIgnoreCase(request.callType())) {
+            if (request.clientId() == null) throw new IllegalArgumentException("Укажите внешний контакт");
+            call.setClient(clientRepository.findById(request.clientId())
+                    .orElseThrow(() -> new IllegalArgumentException("Внешний контакт не найден")));
+        } else {
+            throw new IllegalArgumentException("Неизвестный тип звонка");
+        }
         Call saved = callRepository.save(call);
-
-        callEventProducer.send(new CallEvent(
-                CallEventType.CALL_CREATED, saved.getId(), clientId, null, saved.getStatus().name()));
-
         return saved;
+    }
+
+    @Transactional
+    public Call updateStatus(String actorEmail, Long id, CallStatus status) {
+        Call call = getById(id);
+        ensureAccess(actorEmail, call);
+        if (status == CallStatus.RINGING || status == CallStatus.ANSWERED) {
+            throw new IllegalArgumentException("Телефония Asterisk ещё не подключена");
+        }
+        call.setStatus(status);
+        if (status == CallStatus.COMPLETED) call.setFinishedAt(LocalDateTime.now());
+        return callRepository.save(call);
+    }
+
+    private User requiredUser(String email) {
+        return userRepository.findByEmail(email).orElseThrow(() -> new AccessDeniedException("Пользователь не найден"));
+    }
+
+    private User requiredUser(Long id) {
+        return userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Сотрудник не найден"));
+    }
+
+    private void ensureAccess(String email, Call call) {
+        User user = requiredUser(email);
+        if ((call.getInitiator() == null || !user.getId().equals(call.getInitiator().getId()))
+                && (call.getRecipient() == null || !user.getId().equals(call.getRecipient().getId()))
+                && !user.getRole().name().equals("ADMIN") && !user.getRole().name().equals("SUPER_ADMIN")) {
+            throw new AccessDeniedException("Нет доступа к звонку");
+        }
     }
 
     public Call assignOperator(Long callId, Long operatorId) {

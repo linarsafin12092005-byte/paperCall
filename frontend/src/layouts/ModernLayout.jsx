@@ -1,7 +1,10 @@
 import { colors, spacing, borderRadius, shadows, transitions, typography } from '../design-system/tokens'
-import { LayoutDashboard, Phone, Users, User, BookOpen } from 'lucide-react'
+import { LayoutDashboard, Phone, Users, User, BookOpen, LogOut, ChevronRight, BriefcaseBusiness } from 'lucide-react'
+import { useState } from 'react'
 
-export function ModernLayout({ children, activePage, onPageChange }) {
+export function ModernLayout({ children, activePage, onPageChange, user, onLogout }) {
+  const [showUserMenu, setShowUserMenu] = useState(false)
+
   const navItems = [
     { id: 'dashboard', label: 'Главная', icon: LayoutDashboard },
     { id: 'calls', label: 'Звонки', icon: Phone },
@@ -9,6 +12,9 @@ export function ModernLayout({ children, activePage, onPageChange }) {
     { id: 'profile', label: 'Профиль', icon: User },
     { id: 'start', label: 'Быстрый старт', icon: BookOpen },
   ]
+  if (user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') {
+    navItems.splice(3, 0, { id: 'employees', label: 'Сотрудники', icon: BriefcaseBusiness })
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: colors.bg }}>
@@ -41,13 +47,13 @@ export function ModernLayout({ children, activePage, onPageChange }) {
             transform: 'skewX(-8deg)',
           }}>
             <span style={{
-              background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 50%, #1D4ED8 100%)',
+              background: 'linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
               textShadow: '2px 2px 0px rgba(59, 130, 246, 0.3)',
             }}>
-              PaperCall
+              paperCall
             </span>
           </div>
           <div style={{
@@ -59,7 +65,7 @@ export function ModernLayout({ children, activePage, onPageChange }) {
             textTransform: 'uppercase',
             fontWeight: typography.fontWeight.bold,
           }}>
-            Contact Center
+            Контакт Центр
           </div>
         </div>
 
@@ -108,6 +114,7 @@ export function ModernLayout({ children, activePage, onPageChange }) {
         <div style={{
           padding: spacing[3],
           borderTop: `1px solid ${colors.border}`,
+          position: 'relative',
         }}>
           <div style={{
             display: 'flex',
@@ -118,6 +125,7 @@ export function ModernLayout({ children, activePage, onPageChange }) {
             cursor: 'pointer',
             transition: transitions.fast,
           }}
+            onClick={() => setShowUserMenu(!showUserMenu)}
             onMouseEnter={(e) => e.currentTarget.style.background = colors.surfaceHover}
             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
@@ -132,8 +140,11 @@ export function ModernLayout({ children, activePage, onPageChange }) {
               fontSize: typography.fontSize.sm,
               fontWeight: typography.fontWeight.semibold,
               color: colors.textPrimary,
+              backgroundImage: user?.avatarUrl ? `url(${user.avatarUrl})` : undefined,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
             }}>
-              И
+              {!user?.avatarUrl && (user?.fullName?.charAt(0)?.toUpperCase() || 'U')}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{
@@ -144,16 +155,98 @@ export function ModernLayout({ children, activePage, onPageChange }) {
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
               }}>
-                Иван Иванов
+                {user?.fullName || 'Пользователь'}
               </div>
               <div style={{
                 fontSize: typography.fontSize.xs,
                 color: colors.textTertiary,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
               }}>
-                ivan@papercall.com
+                {user?.email || 'user@papercall.com'}
               </div>
             </div>
+            <ChevronRight
+              size={16}
+              style={{
+                color: colors.textTertiary,
+                transform: showUserMenu ? 'rotate(90deg)' : 'rotate(0deg)',
+                transition: transitions.fast,
+              }}
+            />
           </div>
+
+          {/* User dropdown menu */}
+          {showUserMenu && (
+            <div style={{
+              position: 'absolute',
+              bottom: '100%',
+              left: spacing[3],
+              right: spacing[3],
+              marginBottom: spacing[2],
+              background: colors.surface,
+              border: `1px solid ${colors.border}`,
+              borderRadius: borderRadius.md,
+              boxShadow: shadows.lg,
+              overflow: 'hidden',
+              zIndex: 1000,
+            }}>
+              <button
+                onClick={() => {
+                  setShowUserMenu(false)
+                  onPageChange('profile')
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: spacing[3],
+                  padding: `${spacing[3]} ${spacing[4]}`,
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: `1px solid ${colors.border}`,
+                  color: colors.textPrimary,
+                  fontSize: typography.fontSize.sm,
+                  cursor: 'pointer',
+                  transition: transitions.fast,
+                  textAlign: 'left',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = colors.surfaceHover}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                <User size={16} />
+                Мой профиль
+              </button>
+              <button
+                onClick={() => {
+                  setShowUserMenu(false)
+                  if (onLogout) {
+                    onLogout()
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: spacing[3],
+                  padding: `${spacing[3]} ${spacing[4]}`,
+                  background: 'transparent',
+                  border: 'none',
+                  color: colors.danger,
+                  fontSize: typography.fontSize.sm,
+                  cursor: 'pointer',
+                  transition: transitions.fast,
+                  textAlign: 'left',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = colors.dangerLight}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                <LogOut size={16} />
+                Выйти
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
