@@ -25,7 +25,7 @@ function useApi(path, token, wsEnabled = false) {
     })
       .then((res) => { if (!res.ok) throw new Error('fail'); return res.json() })
       .then((json) => { setData(json); setError(null) })
-      .catch(() => setError(`Failed to load: ${path}`))
+      .catch(() => setError('Не удалось загрузить данные. Проверьте подключение к серверу и повторите попытку.'))
       .finally(() => setLoading(false))
   }, [path, token])
 
@@ -79,9 +79,9 @@ function App() {
     setIsEditingProfile(false)
   }
 
-  const { data: operators } = useApi('/api/operators', token, true)
-  const { data: clients, refetch: refetchClients } = useApi('/api/clients', token, true)
-  const { data: calls, refetch: refetchCalls } = useApi('/api/calls', token, true)
+  const { data: operators, error: operatorsError } = useApi('/api/operators', token, true)
+  const { data: clients, error: clientsError, refetch: refetchClients } = useApi('/api/clients', token, true)
+  const { data: calls, error: callsError, refetch: refetchCalls } = useApi('/api/calls', token, true)
 
   if (!token) {
     return <LoginPage onLogin={handleLogin} />
@@ -110,11 +110,11 @@ function App() {
 
     switch (activePage) {
       case 'dashboard':
-        return <DashboardPage calls={calls} operators={operators} clients={clients} />
+        return <DashboardPage calls={calls} operators={operators} clients={clients} errors={[callsError, clientsError].filter(Boolean)} onViewAllCalls={() => setActivePage('calls')} />
       case 'calls':
-        return <CallsPage calls={calls} clients={clients} user={user} onCallCreated={refetchCalls} />
+        return <CallsPage calls={calls} clients={clients} user={user} apiError={callsError} onCallCreated={refetchCalls} />
       case 'contacts':
-        return <ContactsPage clients={clients} user={user} onClientCreated={refetchClients} />
+        return <ContactsPage clients={clients} user={user} apiError={clientsError} onClientCreated={refetchClients} />
       case 'employees':
         return <EmployeesPage user={user} />
       case 'profile':
@@ -122,7 +122,7 @@ function App() {
       case 'start':
         return <GettingStartedPage />
       default:
-        return <DashboardPage calls={calls} clients={clients} />
+        return <DashboardPage calls={calls} clients={clients} errors={[callsError, clientsError, operatorsError].filter(Boolean)} />
     }
   }
 

@@ -39,10 +39,11 @@ public class CallService {
 
     public List<Call> getAll(String actorEmail) {
         User actor = requiredUser(actorEmail);
-        if (actor.getRole().name().equals("ADMIN") || actor.getRole().name().equals("SUPER_ADMIN")) {
+        if (isAdministrator(actor)) {
             return callRepository.findAll();
         }
         return callRepository.findAll().stream()
+                .filter(call -> !isArchivedRecord(call))
                 .filter(call -> call.getInitiator() != null && actor.getId().equals(call.getInitiator().getId())
                         || call.getRecipient() != null && actor.getId().equals(call.getRecipient().getId()))
                 .toList();
@@ -105,11 +106,23 @@ public class CallService {
 
     private void ensureAccess(String email, Call call) {
         User user = requiredUser(email);
+        if (isArchivedRecord(call) && !isAdministrator(user)) {
+            throw new AccessDeniedException("Нет доступа к архивной записи");
+        }
         if ((call.getInitiator() == null || !user.getId().equals(call.getInitiator().getId()))
                 && (call.getRecipient() == null || !user.getId().equals(call.getRecipient().getId()))
-                && !user.getRole().name().equals("ADMIN") && !user.getRole().name().equals("SUPER_ADMIN")) {
+                && !isAdministrator(user)) {
             throw new AccessDeniedException("Нет доступа к звонку");
         }
+    }
+
+    private boolean isAdministrator(User user) {
+        return user.getRole().name().equals("ADMIN") || user.getRole().name().equals("SUPER_ADMIN");
+    }
+
+    private boolean isArchivedRecord(Call call) {
+        return call.isLegacyDemo()
+                || (call.getInitiator() == null && call.getRecipient() == null && call.getCallType() == null);
     }
 
     public Call assignOperator(Long callId, Long operatorId) {

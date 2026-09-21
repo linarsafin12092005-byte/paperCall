@@ -62,8 +62,13 @@ export function LoginPage({ onLogin }) {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || errorData.message || 'Ошибка авторизации')
+        const contentType = response.headers.get('content-type') || ''
+        if (contentType.includes('application/json')) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || errorData.message || 'Ошибка авторизации')
+        }
+        const errorText = (await response.text()).trim()
+        throw new Error(errorText || 'Ошибка авторизации')
       }
 
       const data = await response.json()

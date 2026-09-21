@@ -28,9 +28,9 @@ Password: ${sipConfig.sipPassword}`
   }
 
   return (
-    <div>
+    <div className="office-page profile-page">
       {/* Header */}
-      <div style={{
+      <div className="office-header" style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',

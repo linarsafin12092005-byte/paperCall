@@ -12,13 +12,15 @@ const statusLabels = {
   FINISHED: 'Завершён',
   FAILED: 'Ошибка',
   CANCELLED: 'Отменён',
-  LEGACY: 'Архивная тестовая запись',
+  LEGACY: 'Архивная запись',
 }
 
-export function CallsPage({ calls = [], clients = [], user, onCallCreated }) {
+export function CallsPage({ calls = [], clients = [], user, apiError, onCallCreated }) {
   const [filter, setFilter] = useState('all')
   const [query, setQuery] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
+  const [error, setError] = useState('')
+  const [updatingCallId, setUpdatingCallId] = useState(null)
   const filtered = useMemo(() => calls.filter((call) => {
     const haystack = [call.initiatorName, call.recipientName, call.clientName, call.clientPhone, call.topic, call.note].join(' ').toLowerCase()
     const matchesQuery = haystack.includes(query.toLowerCase())
@@ -29,28 +31,39 @@ export function CallsPage({ calls = [], clients = [], user, onCallCreated }) {
   }), [calls, query, filter])
 
   const updateStatus = async (call, status) => {
-    const response = await fetch(`/api/calls/${call.id}/status?status=${status}`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-    })
-    if (response.ok) onCallCreated?.()
+    setError('')
+    setUpdatingCallId(call.id)
+    try {
+      const response = await fetch(`/api/calls/${call.id}/status?status=${status}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.error || data.message || 'Не удалось изменить статус звонка')
+      onCallCreated?.()
+    } catch (updateError) {
+      setError(updateError.message || 'Не удалось изменить статус звонка')
+    } finally {
+      setUpdatingCallId(null)
+    }
   }
 
-  return <section>
-    <header style={headerStyle}><div><h1 style={titleStyle}>Звонки</h1><p style={subtitleStyle}>Планирование и журнал внутренних и внешних звонков</p></div><button type="button" style={primary} onClick={() => setCreateOpen(true)}><Plus size={17} /> Создать запись</button></header>
+  return <section className="calls-page">
+    <header className="office-header" style={headerStyle}><div><h1 style={titleStyle}>Звонки</h1><p style={subtitleStyle}>Планирование и журнал внутренних и внешних звонков</p></div><button type="button" style={primary} onClick={() => setCreateOpen(true)}><Plus size={17} /> Создать запись</button></header>
     <div style={infoStyle}>Телефония Asterisk ещё не подключена. Новые записи создаются как «Запланирован» и не имитируют дозвон.</div>
-    <div style={toolbar}><div style={searchWrap}><Search size={17} color={colors.textTertiary} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск по участникам, теме или заметке" style={searchInput} /></div><div style={filters}>{[['all', 'Все'], ['planned', 'Планируемые'], ['completed', 'Завершённые'], ...(['ADMIN', 'SUPER_ADMIN'].includes(user?.role) ? [['legacy', 'Архивные записи']] : [])].map(([id, label]) => <button key={id} type="button" onClick={() => setFilter(id)} style={filter === id ? activeFilter : filterStyle}>{label}</button>)}</div></div>
-    {filtered.length === 0 ? <div style={empty}><CalendarClock size={36} color={colors.textTertiary} /><h2>Записей звонков нет</h2><p>Создайте планируемую запись с конкретным сотрудником или внешним контактом.</p></div> : <div style={list}>{filtered.map((call) => <CallRow key={call.id} call={call} onStatus={updateStatus} />)}</div>}
+    {(error || apiError) && <div style={errorStyle}>{error || apiError}</div>}
+    <div className="office-toolbar" style={toolbar}><div className="office-search" style={searchWrap}><Search size={17} color={colors.textTertiary} title="Поиск" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск по участникам, теме или заметке" style={searchInput} /></div><div className="office-filter-group" style={filters}>{[['all', 'Все'], ['planned', 'Планируемые'], ['completed', 'Завершённые'], ...(['ADMIN', 'SUPER_ADMIN'].includes(user?.role) ? [['legacy', 'Архивные записи']] : [])].map(([id, label]) => <button key={id} type="button" onClick={() => setFilter(id)} style={filter === id ? activeFilter : filterStyle}>{label}</button>)}</div></div>
+    {filtered.length === 0 ? <div style={empty}><CalendarClock size={36} color={colors.textTertiary} title="Нет записей" /><h2>Записей звонков нет</h2><p>Создайте планируемую запись с конкретным сотрудником или внешним контактом.</p></div> : <div className="office-list" style={list}>{filtered.map((call) => <CallRow key={call.id} call={call} onStatus={updateStatus} isUpdating={updatingCallId === call.id} />)}</div>}
     {createOpen && <CreateCallModal clients={clients} currentUser={user} onClose={() => setCreateOpen(false)} onCreated={onCallCreated} />}
   </section>
 }
 
-function CallRow({ call, onStatus }) {
+function CallRow({ call, onStatus, isUpdating }) {
   const status = statusLabels[call.status] || 'Статус не указан'
   const recipient = call.recipientName || call.clientName || 'Получатель не указан'
   const number = call.recipientNumber || call.clientPhone || '—'
   const callType = call.callType === 'INTERNAL' ? 'Внутренний' : call.callType === 'EXTERNAL' ? 'Внешний' : 'Архивная запись'
-  return <article style={row}><div style={callIcon}><Phone size={18} /></div><div style={main}><div style={rowTop}><strong style={name}>{recipient}</strong><span style={statusBadge(call.status)}>{status}</span></div><div style={details}><span>Инициатор: {call.initiatorName || 'Историческая запись'}</span><span>Тип: {callType}</span><span>Номер: {number}</span></div>{call.topic && <div style={muted}>Причина: {call.topic}</div>}{call.note && <div style={muted}>Заметка: {call.note}</div>}<div style={muted}>{new Date(call.plannedAt || call.createdAt).toLocaleString('ru-RU')}</div>{!call.legacyDemo && call.status === 'PLANNED' && <div style={rowActions}><button type="button" style={actionButton} onClick={() => onStatus(call, 'COMPLETED')}>Отметить завершённым</button><button type="button" style={cancelButton} onClick={() => onStatus(call, 'CANCELLED')}>Отменить</button></div>}</div>{call.legacyDemo ? <span style={legacyBadge}>Архив</span> : call.status === 'COMPLETED' ? <CheckCircle2 color={colors.success} size={18} /> : call.status === 'CANCELLED' ? <XCircle color={colors.danger} size={18} /> : null}</article>
+  return <article className="office-call-row" style={row}><div style={callIcon} title="Звонок"><Phone size={18} /></div><div style={main}><div style={rowTop}><strong style={name} title={recipient}>{recipient}</strong><span style={statusBadge(call.status)} title={`Статус: ${status}`}>{status}</span></div><div style={details}><span title={`Инициатор: ${call.initiatorName || 'Историческая запись'}`}>Инициатор: {call.initiatorName || 'Историческая запись'}</span><span>Тип: {callType}</span><span title={`Номер: ${number}`}>Номер: {number}</span></div>{call.topic && <div style={muted} title={call.topic}>Причина: {call.topic}</div>}{call.note && <div style={muted} title={call.note}>Заметка: {call.note}</div>}<div style={muted}>{new Date(call.plannedAt || call.createdAt).toLocaleString('ru-RU')}</div>{!call.legacyDemo && call.status === 'PLANNED' && <div style={rowActions}><button type="button" disabled={isUpdating} style={isUpdating ? disabledActionButton : actionButton} onClick={() => onStatus(call, 'COMPLETED')}>Отметить завершённым</button><button type="button" disabled={isUpdating} style={isUpdating ? disabledCancelButton : cancelButton} onClick={() => onStatus(call, 'CANCELLED')}>Отменить</button></div>}</div>{call.legacyDemo ? <span style={legacyBadge}>Архив</span> : call.status === 'COMPLETED' ? <CheckCircle2 color={colors.success} size={18} title="Завершён" /> : call.status === 'CANCELLED' ? <XCircle color={colors.danger} size={18} title="Отменён" /> : null}</article>
 }
 
 const headerStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: spacing[4], marginBottom: spacing[5], flexWrap: 'wrap' }
@@ -75,6 +88,9 @@ const muted = { marginTop: spacing[2], color: colors.textTertiary, fontSize: typ
 const statusBadge = (status) => ({ padding: `${spacing[1]} ${spacing[2]}`, borderRadius: borderRadius.md, background: ['COMPLETED', 'FINISHED'].includes(status) ? colors.successLight : status === 'FAILED' ? colors.dangerLight : colors.warningLight, color: ['COMPLETED', 'FINISHED'].includes(status) ? colors.success : status === 'FAILED' ? colors.danger : colors.warning, fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.semibold })
 const legacyBadge = { color: colors.textTertiary, fontSize: typography.fontSize.xs }
 const empty = { padding: spacing[8], textAlign: 'center', background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: borderRadius.lg, color: colors.textSecondary }
+const errorStyle = { marginBottom: spacing[4], padding: spacing[3], background: colors.dangerLight, border: `1px solid ${colors.danger}`, borderRadius: borderRadius.md, color: colors.danger }
 const rowActions = { display: 'flex', gap: spacing[2], marginTop: spacing[3] }
 const actionButton = { padding: `${spacing[1]} ${spacing[2]}`, background: colors.successLight, border: `1px solid ${colors.success}`, borderRadius: borderRadius.md, color: colors.success, cursor: 'pointer', fontSize: typography.fontSize.xs }
 const cancelButton = { ...actionButton, background: colors.dangerLight, borderColor: colors.danger, color: colors.danger }
+const disabledActionButton = { ...actionButton, opacity: .6, cursor: 'wait' }
+const disabledCancelButton = { ...cancelButton, opacity: .6, cursor: 'wait' }

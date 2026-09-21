@@ -19,7 +19,7 @@ export function ModernLayout({ children, activePage, onPageChange, user, onLogou
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: colors.bg }}>
       {/* Sidebar */}
-      <aside style={{
+      <aside className="app-sidebar" style={{
         width: '240px',
         background: colors.surface,
         borderRight: `1px solid ${colors.border}`,
@@ -251,11 +251,11 @@ export function ModernLayout({ children, activePage, onPageChange, user, onLogou
       </aside>
 
       {/* Main content */}
-      <main style={{
+      <main className="app-main" style={{
         flex: 1,
         marginLeft: '240px',
         padding: spacing[8],
-        maxWidth: '1400px',
+        maxWidth: 'none',
         width: '100%',
       }}>
         {children}

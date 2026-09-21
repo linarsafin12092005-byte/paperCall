@@ -51,27 +51,39 @@ function EmployeesContent({ user }) {
   }
 
   const toggleStatus = async (employee) => {
-    const response = await fetch(`/api/admin/users/${employee.id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` }, body: JSON.stringify({ active: !employee.active }) })
-    if (!response.ok) { setError('Не удалось изменить статус'); return }
-    await loadEmployees()
+    setError('')
+    try {
+      const response = await fetch(`/api/admin/users/${employee.id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` }, body: JSON.stringify({ active: !employee.active }) })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.error || 'Не удалось изменить статус')
+      await loadEmployees()
+    } catch (statusError) {
+      setError(statusError.message || 'Не удалось изменить статус')
+    }
   }
 
   const changeRole = async (employee, role) => {
-    const response = await fetch(`/api/admin/users/${employee.id}/role`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` }, body: JSON.stringify({ role }) })
-    if (!response.ok) { setError('Не удалось изменить роль'); return }
-    await loadEmployees()
+    setError('')
+    try {
+      const response = await fetch(`/api/admin/users/${employee.id}/role`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` }, body: JSON.stringify({ role }) })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.error || 'Не удалось изменить роль')
+      await loadEmployees()
+    } catch (roleError) {
+      setError(roleError.message || 'Не удалось изменить роль')
+    }
   }
 
   return (
-    <section>
-      <header style={headerStyle}><div><h1 style={titleStyle}>Сотрудники</h1><p style={subtitleStyle}>Управление доступом сотрудников к paperCall</p></div><button type="button" style={primaryButton} onClick={() => setModal({ type: 'edit', employee: null })}><Plus size={17} /> Добавить сотрудника</button></header>
+    <section className="office-page">
+      <header className="office-header" style={headerStyle}><div><h1 style={titleStyle}>Сотрудники</h1><p style={subtitleStyle}>Управление доступом сотрудников к paperCall</p></div><button type="button" style={primaryButton} onClick={() => setModal({ type: 'edit', employee: null })}><Plus size={17} /> Добавить сотрудника</button></header>
       {error && <div style={errorStyle}>{error}</div>}
       <div style={tableWrap}>
         <div style={tableHeader}><span>Сотрудник</span><span>Email</span><span>Роль</span><span>SIP</span><span>Статус</span><span>Действия</span></div>
         {employees.map((employee) => <div key={employee.id} style={rowStyle}>
           <div style={personCell}><div style={avatarStyle}>{employee.fullName?.charAt(0)?.toUpperCase() || '?'}</div><strong>{employee.fullName}</strong></div>
           <div style={truncate}>{employee.email}</div><div><span style={roleBadge(employee.role)}>{roleLabel(employee.role)}</span></div><div style={mono}>{employee.sipExtension || '—'}</div><div><span style={statusBadge(employee.active)}>{employee.active ? 'Активен' : 'Заблокирован'}</span></div>
-<div style={actions}><button type="button" style={iconButton} title="Изменить" aria-label="Изменить" onClick={() => setModal({ type: 'edit', employee })}><Edit3 size={16} /></button><button type="button" style={iconButton} title="Статус" aria-label="Изменить статус" onClick={() => toggleStatus(employee)}>{employee.active ? <UserX size={16} /> : <UserCheck size={16} />}</button><button type="button" style={iconButton} title="Сбросить пароль" aria-label="Сбросить пароль" onClick={() => setModal({ type: 'reset', employee })}><KeyRound size={16} /></button>{user.role === 'SUPER_ADMIN' && employee.id !== user.userId && <select className="paper-form-control" value={normalizeRole(employee.role)} onChange={(e) => changeRole(employee, e.target.value)} style={roleSelect} aria-label={`Изменить роль сотрудника ${employee.fullName}`}><option value="USER">USER</option><option value="ADMIN">ADMIN</option><option value="SUPER_ADMIN">SUPER_ADMIN</option><option value="OPERATOR">OPERATOR</option></select>}</div>
+<div style={actions}><button type="button" style={iconButton} title="Изменить" aria-label="Изменить" onClick={() => setModal({ type: 'edit', employee })}><Edit3 size={16} /></button><button type="button" style={iconButton} title="Статус" aria-label="Изменить статус" onClick={() => toggleStatus(employee)}>{employee.active ? <UserX size={16} /> : <UserCheck size={16} />}</button><button type="button" style={iconButton} title="Сбросить пароль" aria-label="Сбросить пароль" onClick={() => setModal({ type: 'reset', employee })}><KeyRound size={16} /></button>{user.role === 'SUPER_ADMIN' && employee.id !== user.userId && <select className="paper-form-control" value={normalizeRole(employee.role)} onChange={(e) => changeRole(employee, e.target.value)} style={roleSelect} aria-label={`Изменить роль сотрудника ${employee.fullName}`}><option value="USER">Сотрудник</option><option value="ADMIN">Администратор</option><option value="SUPER_ADMIN">Владелец системы</option><option value="OPERATOR">Оператор</option></select>}</div>
         </div>)}
       </div>
       {modal?.type === 'edit' && <EmployeeModal employee={modal.employee} isSuperAdmin={user.role === 'SUPER_ADMIN'} onClose={() => setModal(null)} onSubmit={saveEmployee} />}

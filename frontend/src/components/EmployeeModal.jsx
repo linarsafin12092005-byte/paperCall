@@ -53,8 +53,8 @@ export function EmployeeModal({ employee, isSuperAdmin, onClose, onSubmit }) {
         {!isEdit && (
           <label>Роль
             <select className="paper-form-control" value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })}>
-              <option value="USER">USER</option>
-              {isSuperAdmin && <option value="ADMIN">ADMIN</option>}
+              <option value="USER">Сотрудник</option>
+              {isSuperAdmin && <option value="ADMIN">Администратор</option>}
             </select>
           </label>
         )}
@@ -101,8 +101,15 @@ export function ResetPasswordModal({ employee, onClose, onConfirm }) {
 }
 
 export function CredentialModal({ credential, onClose }) {
+  const [copyError, setCopyError] = useState('')
+
   const copy = async () => {
-    await navigator.clipboard.writeText(credential.password)
+    setCopyError('')
+    try {
+      await navigator.clipboard.writeText(credential.password)
+    } catch {
+      setCopyError('Не удалось скопировать пароль. Скопируйте его вручную.')
+    }
   }
 
   return (
@@ -117,6 +124,7 @@ export function CredentialModal({ credential, onClose }) {
       <p style={{ color: colors.warning, fontSize: typography.fontSize.sm }}>
         Передайте пароль сотруднику. После закрытия это окно больше не будет доступно.
       </p>
+      {copyError && <div style={errorStyle}>{copyError}</div>}
       <button type="button" onClick={onClose} style={primaryButton}>Я сохранил пароль</button>
     </Modal>
   )

@@ -3,7 +3,7 @@ import { Archive, Edit3, Mail, Phone, Plus, Search } from 'lucide-react'
 import { colors, spacing, borderRadius, typography } from '../design-system/tokens'
 import { CreateClientModal } from '../components/CreateClientModal'
 
-export function ContactsPage({ clients = [], user, onClientCreated }) {
+export function ContactsPage({ clients = [], user, apiError, onClientCreated }) {
   const [query, setQuery] = useState('')
   const [modalClient, setModalClient] = useState(undefined)
   const [error, setError] = useState('')
@@ -13,12 +13,12 @@ export function ContactsPage({ clients = [], user, onClientCreated }) {
     if (!response.ok) setError('Не удалось архивировать контакт')
     else onClientCreated?.()
   }
-  return <section>
-    <header style={headerStyle}><div><h1 style={titleStyle}>Внешние контакты</h1><p style={subtitleStyle}>Клиенты, поставщики и партнёры без аккаунта paperCall</p></div><button type="button" style={primary} onClick={() => setModalClient(null)}><Plus size={17} /> Добавить контакт</button></header>
+  return <section className="contacts-page">
+    <header className="office-header" style={headerStyle}><div><h1 style={titleStyle}>Внешние контакты</h1><p style={subtitleStyle}>Клиенты, поставщики и партнёры без аккаунта paperCall</p></div><button type="button" style={primary} onClick={() => setModalClient(null)}><Plus size={17} /> Добавить контакт</button></header>
     <div style={infoStyle}>Внешние контакты не могут войти в систему. Сотрудники используют их для телефонной книги и журнала общения.</div>
-    {error && <div style={errorStyle}>{error}</div>}
-    <div style={searchWrap}><Search size={17} color={colors.textTertiary} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск по имени, телефону, email, организации" style={searchInput} /></div>
-    {visible.length === 0 ? <div style={empty}><Phone size={36} color={colors.textTertiary} /><h2>Внешних контактов нет</h2><p>Добавьте клиента, поставщика или партнёра, чтобы связывать с ним звонки.</p></div> : <div style={grid}>{visible.map((client) => <article key={client.id} style={card}><div style={avatar}>{client.fullName?.charAt(0)?.toUpperCase() || '?'}</div><div style={{ flex: 1, minWidth: 0 }}><h3 style={name}>{client.fullName}</h3><div style={line}><Phone size={14} />{client.phoneNumber}</div>{client.email && <div style={line}><Mail size={14} />{client.email}</div>}{client.organization && <div style={meta}>{client.organization}</div>}{client.note && <div style={meta}>{client.note}</div>}</div>{(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && <div style={actions}><button type="button" title="Изменить" aria-label="Изменить контакт" style={iconButton} onClick={() => setModalClient(client)}><Edit3 size={16} /></button><button type="button" title="Архивировать" aria-label="Архивировать контакт" style={iconButton} onClick={() => archive(client)}><Archive size={16} /></button></div>}</article>)}</div>}
+    {(error || apiError) && <div style={errorStyle}>{error || apiError}</div>}
+    <div className="office-search" style={searchWrap}><Search size={17} color={colors.textTertiary} title="Поиск" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск по имени, телефону, email, организации" style={searchInput} /></div>
+    {visible.length === 0 ? <div style={empty}><Phone size={36} color={colors.textTertiary} title="Нет контактов" /><h2>Внешних контактов нет</h2><p>Добавьте клиента, поставщика или партнёра, чтобы связывать с ним звонки.</p></div> : <div className="office-contact-grid" style={grid}>{visible.map((client) => <article key={client.id} className="office-contact-card" style={card}><div style={avatar} title={client.fullName || 'Контакт'}>{client.fullName?.charAt(0)?.toUpperCase() || '?'}</div><div style={{ flex: 1, minWidth: 0 }}><h3 className="office-truncate" style={name} title={client.fullName}>{client.fullName}</h3><div className="office-truncate" style={line} title={client.phoneNumber}><Phone size={14} title="Телефон" />{client.phoneNumber}</div>{client.email && <div className="office-truncate" style={line} title={client.email}><Mail size={14} title="Email" />{client.email}</div>}{client.organization && <div className="office-truncate" style={meta} title={client.organization}>{client.organization}</div>}{client.note && <div className="office-truncate" style={meta} title={client.note}>{client.note}</div>}</div>{(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && <div style={actions}><button type="button" title="Изменить контакт" aria-label="Изменить контакт" style={iconButton} onClick={() => setModalClient(client)}><Edit3 size={16} /></button><button type="button" title="Архивировать контакт" aria-label="Архивировать контакт" style={iconButton} onClick={() => archive(client)}><Archive size={16} /></button></div>}</article>)}</div>}
     {modalClient !== undefined && <CreateClientModal client={modalClient} onClose={() => setModalClient(undefined)} onCreated={onClientCreated} />}
   </section>
 }
