@@ -1,5 +1,7 @@
 package com.callflow.api.operator;
 
+import com.callflow.api.organization.Organization;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -19,6 +21,11 @@ public class Operator {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OperatorStatus status = OperatorStatus.OFFLINE;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id")
+    @JsonIgnore
+    private Organization organization;
 
     protected Operator() {
         // требуется JPA
@@ -56,4 +63,7 @@ public class Operator {
     public void setStatus(OperatorStatus status) {
         this.status = status;
     }
+
+    public Organization getOrganization() { return organization; }
+    public void setOrganization(Organization organization) { this.organization = organization; }
 }

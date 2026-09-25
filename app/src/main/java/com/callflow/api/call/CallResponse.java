@@ -20,5 +20,9 @@ public record CallResponse(
         String clientName,
         String clientPhone,
         Long operatorId,
-        String operatorName
+        String operatorName,
+        String asteriskLinkedId,
+        LocalDateTime startedAt,
+        LocalDateTime answeredAt,
+        LocalDateTime completedAt
 ) {}

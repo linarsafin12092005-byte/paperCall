@@ -1,5 +1,7 @@
 package com.callflow.api.operator;
 
+import com.callflow.api.organization.Organization;
+import com.callflow.api.organization.OrganizationContextService;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -12,41 +14,46 @@ public class OperatorService {
 
     private final OperatorRepository operatorRepository;
     private final RedisTemplate<String, String> redisTemplate;
+    private final OrganizationContextService organizationContextService;
 
     public OperatorService(OperatorRepository operatorRepository,
-                            RedisTemplate<String, String> redisTemplate) {
+                            RedisTemplate<String, String> redisTemplate,
+                            OrganizationContextService organizationContextService) {
         this.operatorRepository = operatorRepository;
         this.redisTemplate = redisTemplate;
+        this.organizationContextService = organizationContextService;
     }
 
-    public List<Operator> getAll() {
-        return operatorRepository.findAll();
+    public List<Operator> getAll(String actorEmail) {
+        return operatorRepository.findAllByOrganization_Id(organizationContextService.requiredForUser(actorEmail).getId());
     }
 
-    public Operator getById(Long id) {
-        return operatorRepository.findById(id)
+    public Operator getById(String actorEmail, Long id) {
+        return operatorRepository.findByIdAndOrganization_Id(id, organizationContextService.requiredForUser(actorEmail).getId())
                 .orElseThrow(() -> new RuntimeException("Operator not found: " + id));
     }
 
-    public Operator create(Operator operator) {
+    public Operator create(String actorEmail, Operator operator) {
+        Organization organization = organizationContextService.requiredForUser(actorEmail);
+        operator.setOrganization(organization);
         Operator saved = operatorRepository.save(operator);
         redisTemplate.opsForValue().set(STATUS_KEY_PREFIX + saved.getId(), saved.getStatus().name());
         return saved;
     }
 
-    public Operator updateStatus(Long id, OperatorStatus newStatus) {
-        Operator operator = getById(id);
+    public Operator updateStatus(String actorEmail, Long id, OperatorStatus newStatus) {
+        Operator operator = getById(actorEmail, id);
         operator.setStatus(newStatus);
         Operator saved = operatorRepository.save(operator);
         redisTemplate.opsForValue().set(STATUS_KEY_PREFIX + saved.getId(), saved.getStatus().name());
         return saved;
     }
 
-    public String getCachedStatus(Long id) {
+    public String getCachedStatus(String actorEmail, Long id) {
         String cached = redisTemplate.opsForValue().get(STATUS_KEY_PREFIX + id);
         if (cached != null) {
             return cached;
         }
-        return getById(id).getStatus().name();
+        return getById(actorEmail, id).getStatus().name();
     }
 }

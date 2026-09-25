@@ -10,6 +10,12 @@ public class CallEvent {
     private Long operatorId;
     private String status;
     private LocalDateTime timestamp;
+    private String linkedId;
+    private String uniqueId;
+    private String callerExtension;
+    private String calleeExtension;
+    private Long initiatorUserId;
+    private Long recipientUserId;
 
     public CallEvent() {
     }
@@ -70,4 +76,31 @@ public class CallEvent {
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
     }
+
+    public String getLinkedId() { return linkedId; }
+    public void setLinkedId(String linkedId) { this.linkedId = linkedId; }
+    public String getUniqueId() { return uniqueId; }
+    public void setUniqueId(String uniqueId) { this.uniqueId = uniqueId; }
+    public String getCallerExtension() { return callerExtension; }
+    public void setCallerExtension(String callerExtension) { this.callerExtension = callerExtension; }
+    public String getCalleeExtension() { return calleeExtension; }
+    public void setCalleeExtension(String calleeExtension) { this.calleeExtension = calleeExtension; }
+
+    public static CallEvent ami(String linkedId, String uniqueId, CallEventType type,
+                                String status, Long initiatorId, Long recipientId,
+                                String callerExtension, String calleeExtension) {
+        CallEvent event = new CallEvent(type, null, null, null, status);
+        event.linkedId = linkedId;
+        event.uniqueId = uniqueId;
+        event.initiatorUserId = initiatorId;
+        event.recipientUserId = recipientId;
+        event.callerExtension = callerExtension;
+        event.calleeExtension = calleeExtension;
+        return event;
+    }
+
+    public Long getInitiatorUserId() { return initiatorUserId; }
+    public void setInitiatorUserId(Long initiatorUserId) { this.initiatorUserId = initiatorUserId; }
+    public Long getRecipientUserId() { return recipientUserId; }
+    public void setRecipientUserId(Long recipientUserId) { this.recipientUserId = recipientUserId; }
 }

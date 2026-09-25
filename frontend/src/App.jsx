@@ -82,6 +82,7 @@ function App() {
   const { data: operators, error: operatorsError } = useApi('/api/operators', token, true)
   const { data: clients, error: clientsError, refetch: refetchClients } = useApi('/api/clients', token, true)
   const { data: calls, error: callsError, refetch: refetchCalls } = useApi('/api/calls', token, true)
+  const { data: telephonyStatus } = useApi('/api/telephony/status', token, true)
 
   if (!token) {
     return <LoginPage onLogin={handleLogin} />
@@ -110,9 +111,9 @@ function App() {
 
     switch (activePage) {
       case 'dashboard':
-        return <DashboardPage calls={calls} operators={operators} clients={clients} errors={[callsError, clientsError].filter(Boolean)} onViewAllCalls={() => setActivePage('calls')} />
+        return <DashboardPage calls={calls} operators={operators} clients={clients} telephonyStatus={telephonyStatus} errors={[callsError, clientsError].filter(Boolean)} onViewAllCalls={() => setActivePage('calls')} />
       case 'calls':
-        return <CallsPage calls={calls} clients={clients} user={user} apiError={callsError} onCallCreated={refetchCalls} />
+        return <CallsPage calls={calls} clients={clients} user={user} apiError={callsError} telephonyStatus={telephonyStatus} onCallCreated={refetchCalls} />
       case 'contacts':
         return <ContactsPage clients={clients} user={user} apiError={clientsError} onClientCreated={refetchClients} />
       case 'employees':
@@ -120,9 +121,9 @@ function App() {
       case 'profile':
         return <ProfilePage user={user} onLogout={handleLogout} onEditProfile={() => setIsEditingProfile(true)} />
       case 'start':
-        return <GettingStartedPage />
+        return <GettingStartedPage user={user} telephonyStatus={telephonyStatus} />
       default:
-        return <DashboardPage calls={calls} clients={clients} errors={[callsError, clientsError, operatorsError].filter(Boolean)} />
+        return <DashboardPage calls={calls} clients={clients} telephonyStatus={telephonyStatus} errors={[callsError, clientsError, operatorsError].filter(Boolean)} />
     }
   }
 

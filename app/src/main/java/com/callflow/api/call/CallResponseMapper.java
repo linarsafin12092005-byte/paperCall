@@ -20,7 +20,8 @@ public final class CallResponseMapper {
                 call.getClient() == null ? null : call.getClient().getFullName(),
                 call.getClient() == null ? null : call.getClient().getPhoneNumber(),
                 call.getOperator() == null ? null : call.getOperator().getId(),
-                call.getOperator() == null ? null : call.getOperator().getFullName()
+                call.getOperator() == null ? null : call.getOperator().getFullName(),
+                call.getAsteriskLinkedId(), call.getStartedAt(), call.getAnsweredAt(), call.getCompletedAt()
         );
     }
 }

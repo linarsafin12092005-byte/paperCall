@@ -7,9 +7,13 @@ export function ProfilePage({ user, onLogout, onEditProfile }) {
   const [copied, setCopied] = useState('')
 
   const sipConfig = {
-    sipServer: window.location.hostname,
-    sipExtension: user?.sipExtension || user?.username || '1001',
+    localSipServer: 'localhost',
+    lanSipServer: '192.168.207.102',
+    sipExtension: user?.sipExtension || '—',
     sipPassword: user?.sipPassword || '********',
+    domain: 'asterisk',
+    transport: 'UDP',
+    port: '5060',
   }
 
   const copyToClipboard = (text, field) => {
@@ -19,8 +23,12 @@ export function ProfilePage({ user, onLogout, onEditProfile }) {
   }
 
   const copyAllCredentials = () => {
-    const credentials = `SIP Server: ${sipConfig.sipServer}:5060
+    const credentials = `SIP Server (this computer): ${sipConfig.localSipServer}:${sipConfig.port}
+SIP Server (LAN device): ${sipConfig.lanSipServer}:${sipConfig.port}
+Domain: ${sipConfig.domain}
 Extension: ${sipConfig.sipExtension}
+Auth username: ${sipConfig.sipExtension}
+Transport: ${sipConfig.transport}
 Password: ${sipConfig.sipPassword}`
     navigator.clipboard.writeText(credentials)
     setCopied('all')
@@ -212,36 +220,39 @@ Password: ${sipConfig.sipPassword}`
               <Server size={16} />
               SIP Сервер
             </div>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: spacing[2],
-              padding: spacing[3],
-              background: colors.bg,
-              border: `1px solid ${colors.border}`,
-              borderRadius: borderRadius.md,
-            }}>
-              <code style={{
-                flex: 1,
-                fontSize: typography.fontSize.base,
-                color: colors.textPrimary,
-                fontFamily: 'monospace',
-              }}>
-                {sipConfig.sipServer}:5060
-              </code>
-              <button
-                onClick={() => copyToClipboard(`${sipConfig.sipServer}:5060`, 'server')}
-                style={{
-                  padding: spacing[2],
-                  background: 'transparent',
-                  border: 'none',
-                  color: copied === 'server' ? colors.success : colors.textSecondary,
-                  cursor: 'pointer',
-                  transition: transitions.fast,
-                }}
-              >
-                {copied === 'server' ? <CheckCircle size={18} /> : <Copy size={18} />}
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[2] }}>
+              {[
+                ['server-local', 'На этом компьютере', `${sipConfig.localSipServer}:${sipConfig.port}`],
+                ['server-lan', 'Телефон или другой компьютер в LAN', `${sipConfig.lanSipServer}:${sipConfig.port}`],
+              ].map(([field, label, value]) => (
+                <div key={field} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: spacing[2],
+                  padding: spacing[3],
+                  background: colors.bg,
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: borderRadius.md,
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ color: colors.textTertiary, fontSize: typography.fontSize.xs }}>{label}</div>
+                    <code style={{ fontSize: typography.fontSize.base, color: colors.textPrimary, fontFamily: 'monospace' }}>{value}</code>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(value, field)}
+                    style={{
+                      padding: spacing[2],
+                      background: 'transparent',
+                      border: 'none',
+                      color: copied === field ? colors.success : colors.textSecondary,
+                      cursor: 'pointer',
+                      transition: transitions.fast,
+                    }}
+                  >
+                    {copied === field ? <CheckCircle size={18} /> : <Copy size={18} />}
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
 

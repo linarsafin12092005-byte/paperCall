@@ -1,5 +1,7 @@
 package com.callflow.api.client;
 
+import com.callflow.api.organization.Organization;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -13,8 +15,13 @@ public class Client {
     @Column(nullable = false)
     private String fullName;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String phoneNumber;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id")
+    @JsonIgnore
+    private Organization organizationEntity;
 
     private String email;
     private String organization;
@@ -28,6 +35,7 @@ public class Client {
         this.fullName = fullName;
         this.phoneNumber = phoneNumber;
     }
+
 
     public Long getId() {
         return id;
@@ -57,4 +65,6 @@ public class Client {
     public void setNote(String note) { this.note = note; }
     public boolean isArchived() { return archived; }
     public void setArchived(boolean archived) { this.archived = archived; }
+    public Organization getOrganizationEntity() { return organizationEntity; }
+    public void setOrganizationEntity(Organization organizationEntity) { this.organizationEntity = organizationEntity; }
 }

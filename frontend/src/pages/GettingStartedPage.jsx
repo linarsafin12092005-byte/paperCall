@@ -1,5 +1,5 @@
 import { colors, spacing, borderRadius, typography, transitions } from '../design-system/tokens'
-import { Download, Server, Phone, CheckCircle, ExternalLink, HelpCircle } from 'lucide-react'
+import { Download, CheckCircle, ExternalLink, HelpCircle } from 'lucide-react'
 
 function StepCard({ number, title, children, action }) {
   return (
@@ -99,8 +99,8 @@ function FAQItem({ question, answer }) {
   )
 }
 
-export function GettingStartedPage() {
-  const sipServer = window.location.hostname
+export function GettingStartedPage({ user, telephonyStatus }) {
+  const sipExtension = user?.sipExtension || '—'
 
   return (
     <div>
@@ -119,8 +119,23 @@ export function GettingStartedPage() {
           color: colors.textSecondary,
           lineHeight: typography.lineHeight.relaxed,
         }}>
-          Настройте MicroSIP за 3 простых шага и начните совершать звонки
+          Настройте SIP-клиент с данными вашего аккаунта и начните совершать звонки
         </p>
+      </div>
+
+      <div style={{
+        marginBottom: spacing[6],
+        padding: spacing[4],
+        background: telephonyStatus?.connected ? colors.successLight : colors.warningLight,
+        border: `1px solid ${telephonyStatus?.connected ? colors.success : colors.warning}`,
+        borderRadius: borderRadius.md,
+        color: telephonyStatus?.connected ? colors.success : colors.warning,
+      }}>
+        {telephonyStatus?.connected
+          ? 'Телефония подключена. Можно регистрировать SIP-устройства.'
+          : telephonyStatus && typeof telephonyStatus.connected === 'boolean'
+            ? 'Телефония недоступна. Проверьте подключение позже.'
+            : 'Статус телефонии временно недоступен'}
       </div>
 
       {/* Steps */}
@@ -181,13 +196,25 @@ export function GettingStartedPage() {
             gap: spacing[2],
           }}>
             <li style={{ color: colors.textSecondary }}>
-              <strong style={{ color: colors.textPrimary }}>Сервер:</strong> {sipServer}:5060
+              <strong style={{ color: colors.textPrimary }}>Сервер на этом компьютере:</strong> localhost:5060 — если SIP-клиент запущен здесь же
             </li>
             <li style={{ color: colors.textSecondary }}>
-              <strong style={{ color: colors.textPrimary }}>Логин:</strong> Ваш extension (например, 1001)
+              <strong style={{ color: colors.textPrimary }}>Сервер для телефона или другого компьютера:</strong> 192.168.207.102:5060 — если устройство подключено к той же LAN
             </li>
             <li style={{ color: colors.textSecondary }}>
-              <strong style={{ color: colors.textPrimary }}>Пароль:</strong> Указан в профиле
+              <strong style={{ color: colors.textPrimary }}>Domain:</strong> asterisk
+            </li>
+            <li style={{ color: colors.textSecondary }}>
+              <strong style={{ color: colors.textPrimary }}>Extension:</strong> {sipExtension}
+            </li>
+            <li style={{ color: colors.textSecondary }}>
+              <strong style={{ color: colors.textPrimary }}>Auth username:</strong> {sipExtension}
+            </li>
+            <li style={{ color: colors.textSecondary }}>
+              <strong style={{ color: colors.textPrimary }}>Transport:</strong> UDP, порт 5060
+            </li>
+            <li style={{ color: colors.textSecondary }}>
+              <strong style={{ color: colors.textPrimary }}>Пароль:</strong> используйте пароль SIP из профиля; он не показывается автоматически
             </li>
           </ul>
         </StepCard>
@@ -206,16 +233,16 @@ export function GettingStartedPage() {
               Откройте MicroSIP
             </li>
             <li style={{ color: colors.textSecondary }}>
-              Нажмите на иконку → <strong style={{ color: colors.textPrimary }}>Меню → Accounts → Add</strong>
+              Нажмите на иконку → <strong style={{ color: colors.textPrimary }}>Меню → Аккаунты → Добавить</strong>
             </li>
             <li style={{ color: colors.textSecondary }}>
               Вставьте данные из профиля
             </li>
             <li style={{ color: colors.textSecondary }}>
-              Нажмите <strong style={{ color: colors.textPrimary }}>Save</strong>
+              Нажмите <strong style={{ color: colors.textPrimary }}>Сохранить</strong>
             </li>
             <li style={{ color: colors.textSecondary }}>
-              Дождитесь статуса <span style={{ color: colors.success, fontWeight: typography.fontWeight.semibold }}>Ready</span> в интерфейсе
+              Дождитесь статуса <span style={{ color: colors.success, fontWeight: typography.fontWeight.semibold }}>Готов</span> в интерфейсе
             </li>
           </ol>
         </StepCard>
@@ -229,19 +256,10 @@ export function GettingStartedPage() {
         padding: spacing[6],
         marginBottom: spacing[8],
       }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: spacing[3],
-          marginBottom: spacing[3],
-        }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3], marginBottom: spacing[3] }}>
           <CheckCircle size={24} color={colors.success} />
-          <h3 style={{
-            fontSize: typography.fontSize.lg,
-            fontWeight: typography.fontWeight.semibold,
-            color: colors.textPrimary,
-          }}>
-            Готово? Проверьте связь!
+          <h3 style={{ fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.semibold, color: colors.textPrimary }}>
+            Проверка связи
           </h3>
         </div>
         <p style={{
@@ -249,15 +267,7 @@ export function GettingStartedPage() {
           color: colors.textSecondary,
           marginBottom: spacing[4],
         }}>
-          Наберите <code style={{
-            padding: `${spacing[1]} ${spacing[2]}`,
-            background: colors.surface,
-            borderRadius: borderRadius.sm,
-            fontFamily: 'monospace',
-            fontSize: typography.fontSize.base,
-            color: colors.success,
-            fontWeight: typography.fontWeight.bold,
-          }}>*43</code> для тестового звонка. Вы должны услышать эхо.
+          Для проверки позвоните с одного зарегистрированного SIP-устройства на другой внутренний номер.
         </p>
       </div>
 

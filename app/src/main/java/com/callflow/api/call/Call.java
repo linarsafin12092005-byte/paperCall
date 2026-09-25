@@ -2,7 +2,9 @@ package com.callflow.api.call;
 
 import com.callflow.api.client.Client;
 import com.callflow.api.operator.Operator;
+import com.callflow.api.organization.Organization;
 import com.callflow.api.user.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -16,7 +18,7 @@ public class Call {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "client_id", nullable = false)
+    @JoinColumn(name = "client_id")
     private Client client;
 
     @ManyToOne
@@ -31,6 +33,11 @@ public class Call {
     @JoinColumn(name = "recipient_user_id")
     private User recipient;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id")
+    @JsonIgnore
+    private Organization organization;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private CallStatus status = CallStatus.PLANNED;
@@ -41,6 +48,11 @@ public class Call {
     private LocalDateTime answeredAt;
 
     private LocalDateTime finishedAt;
+    private LocalDateTime startedAt;
+    private LocalDateTime completedAt;
+
+    @Column(name = "asterisk_linked_id", unique = true)
+    private String asteriskLinkedId;
 
     private String callType;
     private String topic;
@@ -117,5 +129,23 @@ public class Call {
 
     public void setFinishedAt(LocalDateTime finishedAt) {
         this.finishedAt = finishedAt;
+    }
+
+    public LocalDateTime getStartedAt() { return startedAt; }
+    public void setStartedAt(LocalDateTime startedAt) { this.startedAt = startedAt; }
+    public LocalDateTime getCompletedAt() { return completedAt; }
+    public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
+    public String getAsteriskLinkedId() { return asteriskLinkedId; }
+    public void setAsteriskLinkedId(String asteriskLinkedId) { this.asteriskLinkedId = asteriskLinkedId; }
+    public Organization getOrganization() { return organization; }
+    public void setOrganization(Organization organization) { this.organization = organization; }
+
+    public static Call createAsteriskCall(User initiator, User recipient) {
+        Call call = new Call();
+        call.setInitiator(initiator);
+        call.setRecipient(recipient);
+        call.setCallType("INTERNAL");
+        call.setLegacyDemo(false);
+        return call;
     }
 }

@@ -434,7 +434,10 @@ select.paper-form-control {
   min-height: 76px;
   padding: 14px 4px;
   border-bottom: 1px solid #2A2E3C;
+  cursor: pointer;
 }
+
+.dashboard-call-row:hover { background: rgba(255, 255, 255, 0.03); }
 
 .dashboard-call-row:last-child { border-bottom: 0; }
 

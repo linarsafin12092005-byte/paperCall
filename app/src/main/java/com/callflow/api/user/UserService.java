@@ -1,7 +1,12 @@
 package com.callflow.api.user;
 
+import com.callflow.api.organization.Organization;
+import com.callflow.api.organization.OrganizationMembership;
+import com.callflow.api.organization.OrganizationMembershipRepository;
+import com.callflow.api.organization.OrganizationRepository;
 import com.callflow.api.security.JwtTokenProvider;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,15 +21,29 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AvatarStorageService avatarStorageService;
+    private final OrganizationRepository organizationRepository;
+    private final OrganizationMembershipRepository membershipRepository;
+
+    @Autowired
+    public UserService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder,
+                       JwtTokenProvider jwtTokenProvider,
+                       AvatarStorageService avatarStorageService,
+                       OrganizationRepository organizationRepository,
+                       OrganizationMembershipRepository membershipRepository) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.avatarStorageService = avatarStorageService;
+        this.organizationRepository = organizationRepository;
+        this.membershipRepository = membershipRepository;
+    }
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        JwtTokenProvider jwtTokenProvider,
                        AvatarStorageService avatarStorageService) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtTokenProvider = jwtTokenProvider;
-        this.avatarStorageService = avatarStorageService;
+        this(userRepository, passwordEncoder, jwtTokenProvider, avatarStorageService, null, null);
     }
 
     @Transactional
@@ -57,7 +76,15 @@ public class UserService {
         user.setSipExtension(sipExtension);
         user.setSipPassword(sipPassword);
 
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        Organization organization = organizationRepository == null
+                ? null
+                : organizationRepository.findBySlugAndActiveTrue("papercall").orElse(null);
+        if (organization != null && membershipRepository != null
+                && !membershipRepository.existsByUserIdAndOrganizationId(saved.getId(), organization.getId())) {
+            membershipRepository.save(new OrganizationMembership(saved, organization, saved.getRole().name(), saved.isActive()));
+        }
+        return saved;
     }
 
     public User authenticate(String email, String password) {

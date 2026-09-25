@@ -39,12 +39,12 @@ public class CallController {
     }
 
     @PostMapping("/{id}/assign")
-    public Call assignOperator(@PathVariable Long id, @RequestParam Long operatorId) {
-        return callService.assignOperator(id, operatorId);
+    public Call assignOperator(@PathVariable Long id, @RequestParam Long operatorId, Authentication authentication) {
+        return callService.assignOperator(authentication.getName(), id, operatorId);
     }
 
     @PostMapping("/{id}/finish")
-    public Call finish(@PathVariable Long id) {
-        return callService.finish(id);
+    public Call finish(@PathVariable Long id, Authentication authentication) {
+        return callService.finish(authentication.getName(), id);
     }
 }

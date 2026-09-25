@@ -280,3 +280,98 @@ docker compose logs api --tail 20 | grep "CallEvent received"
 ## 10. Итог
 
 Этот проект — не набор изолированных демонстраций, а связанная система: реальный SIP-звонок через Asterisk запускает событие, которое летит в Kafka, видно в Kafka UI, отражается в метриках Prometheus, трассируется в Jaeger, и весь код, который это обеспечивает, проходит через настоящий CI/CD пайплайн от git push до передеплоя контейнера. Каждый компонент был не просто написан, а запущен и проверен вживую.
+
+## Локальный SIP MVP (Asterisk)
+
+Asterisk для локального теста запускается отдельным Compose-профилем `telephony`. На этом этапе используются два изолированных статических SIP-аккаунта: `1001` и `1002`. Они не связаны с пользователями, ролями или звонками paperCall и не создают записи в БД.
+
+### 1. Узнать LAN IP компьютера
+
+На Linux/WSL выполните:
+
+```bash
+hostname -I
+ip -br addr
+```
+
+На Windows PowerShell:
+
+```powershell
+ipconfig
+```
+
+Выберите IPv4-адрес локального интерфейса, доступный телефону и компьютеру с SIP-клиентом. Для текущей среды paperCall это `192.168.207.102`.
+
+Если адрес отличается, задайте его перед запуском:
+
+```bash
+export PAPERCALL_LAN_IP=192.168.207.102
+```
+
+### 2. Запустить Asterisk
+
+```bash
+docker compose --profile telephony up -d asterisk
+```
+
+Проверить состояние:
+
+```bash
+docker compose ps asterisk
+docker inspect callflow-asterisk --format '{{.State.Health.Status}}'
+```
+
+### 3. Проверить endpoints, AoR и dialplan
+
+Команды не выводят SIP-пароли:
+
+```bash
+docker exec callflow-asterisk asterisk -rx "pjsip show endpoints"
+docker exec callflow-asterisk asterisk -rx "pjsip show aors"
+docker exec callflow-asterisk asterisk -rx "dialplan show internal"
+```
+
+Для регистрации endpoint в выводе `pjsip show endpoints` должен появиться контакт/статус `Avail` или зарегистрированный contact.
+
+### 4. Настроить SIP-клиенты
+
+Подойдут, например, Linphone, Zoiper или MicroSIP. На телефоне и компьютере укажите:
+
+- SIP server / registrar: LAN IP компьютера с Docker, например `192.168.207.102`;
+- SIP port: `5060` UDP;
+- transport: UDP;
+- один клиент: extension `1001`;
+- второй клиент: extension `1002`;
+- SIP password: значение из локального `asterisk/conf/pjsip.conf`, не публикуйте его в чатах, логах или скриншотах.
+
+После регистрации один клиент набирает `1002`, второй — `1001`.
+
+### 5. Используемые порты
+
+- `5060/udp` — SIP-регистрация и сигнализация, только из локальной сети;
+- `10000-10010/udp` — RTP-аудио, только из локальной сети;
+- `5038/tcp` — AMI не публикуется на host и доступен только внутри Docker-сети для будущего API-интеграционного этапа.
+
+MySQL, Redis, Kafka и API не публикуются наружу Compose-конфигурацией; внутренние сервисы доступны по Docker network.
+
+**Не пробрасывайте SIP, RTP или AMI в Интернет и не открывайте их на маршрутизаторе. Этот MVP предназначен только для одной доверенной локальной сети.**
+
+### 6. Остановить telephony profile
+
+```bash
+docker compose --profile telephony stop asterisk
+```
+
+Команда не удаляет контейнерные volumes, пользователей, клиентов, звонки или базу данных.
+## Local Asterisk AMI secret
+
+The Asterisk AMI secret is local-only and must not be committed. Create the
+ignored `.env` file before starting the telephony profile:
+
+```bash
+cp .env.example .env
+```
+
+Then replace `ASTERISK_AMI_PASSWORD` in `.env` with a long random value.
+Compose fails fast if the value is missing or empty. AMI remains available
+only on the internal Docker network; port 5038 is not published to the host.

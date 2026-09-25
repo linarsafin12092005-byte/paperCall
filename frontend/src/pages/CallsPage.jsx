@@ -15,20 +15,30 @@ const statusLabels = {
   LEGACY: 'Архивная запись',
 }
 
-export function CallsPage({ calls = [], clients = [], user, apiError, onCallCreated }) {
+export function CallsPage({ calls = [], clients = [], user, apiError, telephonyStatus, onCallCreated }) {
   const [filter, setFilter] = useState('all')
   const [query, setQuery] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
   const [error, setError] = useState('')
   const [updatingCallId, setUpdatingCallId] = useState(null)
-  const filtered = useMemo(() => calls.filter((call) => {
-    const haystack = [call.initiatorName, call.recipientName, call.clientName, call.clientPhone, call.topic, call.note].join(' ').toLowerCase()
-    const matchesQuery = haystack.includes(query.toLowerCase())
-    const isArchive = call.legacyDemo || call.status === 'LEGACY'
-    const matchesArchiveAccess = !isArchive || filter === 'legacy'
-    const matchesFilter = matchesArchiveAccess && (filter === 'all' || (filter === 'legacy' ? isArchive : filter === 'planned' ? ['PLANNED', 'INITIATED'].includes(call.status) : filter === 'completed' ? ['COMPLETED', 'FINISHED'].includes(call.status) : true))
-    return matchesQuery && matchesFilter
-  }), [calls, query, filter])
+  const filtered = useMemo(() => {
+    const visible = calls.filter((call) => {
+      const haystack = [call.initiatorName, call.recipientName, call.clientName, call.clientPhone, call.topic, call.note].join(' ').toLowerCase()
+      const matchesQuery = haystack.includes(query.toLowerCase())
+      const isArchive = call.legacyDemo || call.status === 'LEGACY'
+      const matchesFilter = filter === 'legacy'
+        ? isArchive
+        : !isArchive && (filter === 'all'
+          || (filter === 'planned' && ['PLANNED', 'INITIATED'].includes(call.status))
+          || (filter === 'completed' && ['COMPLETED', 'FINISHED'].includes(call.status)))
+      return matchesQuery && matchesFilter
+    })
+
+    return [...visible].sort((left, right) => {
+      const difference = callTimestamp(right) - callTimestamp(left)
+      return difference || (Number(right.id) || 0) - (Number(left.id) || 0)
+    })
+  }, [calls, query, filter])
 
   const updateStatus = async (call, status) => {
     setError('')
@@ -50,7 +60,9 @@ export function CallsPage({ calls = [], clients = [], user, apiError, onCallCrea
 
   return <section className="calls-page">
     <header className="office-header" style={headerStyle}><div><h1 style={titleStyle}>Звонки</h1><p style={subtitleStyle}>Планирование и журнал внутренних и внешних звонков</p></div><button type="button" style={primary} onClick={() => setCreateOpen(true)}><Plus size={17} /> Создать запись</button></header>
-    <div style={infoStyle}>Телефония Asterisk ещё не подключена. Новые записи создаются как «Запланирован» и не имитируют дозвон.</div>
+    <div style={infoStyle}>{telephonyStatus?.connected
+      ? 'Телефония подключена. В журнал поступают реальные SIP-звонки.'
+      : 'Телефония не подключена. Новые записи работают в режиме планирования.'}</div>
     {(error || apiError) && <div style={errorStyle}>{error || apiError}</div>}
     <div className="office-toolbar" style={toolbar}><div className="office-search" style={searchWrap}><Search size={17} color={colors.textTertiary} title="Поиск" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск по участникам, теме или заметке" style={searchInput} /></div><div className="office-filter-group" style={filters}>{[['all', 'Все'], ['planned', 'Планируемые'], ['completed', 'Завершённые'], ...(['ADMIN', 'SUPER_ADMIN'].includes(user?.role) ? [['legacy', 'Архивные записи']] : [])].map(([id, label]) => <button key={id} type="button" onClick={() => setFilter(id)} style={filter === id ? activeFilter : filterStyle}>{label}</button>)}</div></div>
     {filtered.length === 0 ? <div style={empty}><CalendarClock size={36} color={colors.textTertiary} title="Нет записей" /><h2>Записей звонков нет</h2><p>Создайте планируемую запись с конкретным сотрудником или внешним контактом.</p></div> : <div className="office-list" style={list}>{filtered.map((call) => <CallRow key={call.id} call={call} onStatus={updateStatus} isUpdating={updatingCallId === call.id} />)}</div>}
@@ -63,7 +75,14 @@ function CallRow({ call, onStatus, isUpdating }) {
   const recipient = call.recipientName || call.clientName || 'Получатель не указан'
   const number = call.recipientNumber || call.clientPhone || '—'
   const callType = call.callType === 'INTERNAL' ? 'Внутренний' : call.callType === 'EXTERNAL' ? 'Внешний' : 'Архивная запись'
-  return <article className="office-call-row" style={row}><div style={callIcon} title="Звонок"><Phone size={18} /></div><div style={main}><div style={rowTop}><strong style={name} title={recipient}>{recipient}</strong><span style={statusBadge(call.status)} title={`Статус: ${status}`}>{status}</span></div><div style={details}><span title={`Инициатор: ${call.initiatorName || 'Историческая запись'}`}>Инициатор: {call.initiatorName || 'Историческая запись'}</span><span>Тип: {callType}</span><span title={`Номер: ${number}`}>Номер: {number}</span></div>{call.topic && <div style={muted} title={call.topic}>Причина: {call.topic}</div>}{call.note && <div style={muted} title={call.note}>Заметка: {call.note}</div>}<div style={muted}>{new Date(call.plannedAt || call.createdAt).toLocaleString('ru-RU')}</div>{!call.legacyDemo && call.status === 'PLANNED' && <div style={rowActions}><button type="button" disabled={isUpdating} style={isUpdating ? disabledActionButton : actionButton} onClick={() => onStatus(call, 'COMPLETED')}>Отметить завершённым</button><button type="button" disabled={isUpdating} style={isUpdating ? disabledCancelButton : cancelButton} onClick={() => onStatus(call, 'CANCELLED')}>Отменить</button></div>}</div>{call.legacyDemo ? <span style={legacyBadge}>Архив</span> : call.status === 'COMPLETED' ? <CheckCircle2 color={colors.success} size={18} title="Завершён" /> : call.status === 'CANCELLED' ? <XCircle color={colors.danger} size={18} title="Отменён" /> : null}</article>
+  const isRealCall = Boolean(call.asteriskLinkedId)
+  return <article className="office-call-row" style={row}><div style={callIcon} title="Звонок"><Phone size={18} /></div><div style={main}><div style={rowTop}><strong style={name} title={recipient}>{recipient}</strong><span style={statusBadge(call.status)} title={`Статус: ${status}`}>{status}</span></div><div style={details}><span title={`Инициатор: ${call.initiatorName || 'Историческая запись'}`}>Инициатор: {call.initiatorName || 'Историческая запись'}</span><span>Тип: {callType}</span>{isRealCall && <span style={realCallBadge}>SIP-звонок</span>}<span title={`Номер: ${number}`}>Номер: {number}</span></div>{call.topic && <div style={muted} title={call.topic}>Причина: {call.topic}</div>}{call.note && <div style={muted} title={call.note}>Заметка: {call.note}</div>}<div style={muted}>{new Date(call.startedAt || call.plannedAt || call.createdAt).toLocaleString('ru-RU')}</div>{!call.legacyDemo && call.status === 'PLANNED' && <div style={rowActions}><button type="button" disabled={isUpdating} style={isUpdating ? disabledActionButton : actionButton} onClick={() => onStatus(call, 'COMPLETED')}>Отметить завершённым</button><button type="button" disabled={isUpdating} style={isUpdating ? disabledCancelButton : cancelButton} onClick={() => onStatus(call, 'CANCELLED')}>Отменить</button></div>}</div>{call.legacyDemo ? <span style={legacyBadge}>Архив</span> : call.status === 'COMPLETED' ? <CheckCircle2 color={colors.success} size={18} title="Завершён" /> : call.status === 'CANCELLED' ? <XCircle color={colors.danger} size={18} title="Отменён" /> : null}</article>
+}
+
+function callTimestamp(call) {
+  const value = call.startedAt || call.plannedAt || call.createdAt
+  const timestamp = value ? Date.parse(value) : Number.NaN
+  return Number.isNaN(timestamp) ? 0 : timestamp
 }
 
 const headerStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: spacing[4], marginBottom: spacing[5], flexWrap: 'wrap' }
@@ -87,6 +106,7 @@ const details = { display: 'flex', gap: spacing[3], flexWrap: 'wrap', marginTop:
 const muted = { marginTop: spacing[2], color: colors.textTertiary, fontSize: typography.fontSize.sm }
 const statusBadge = (status) => ({ padding: `${spacing[1]} ${spacing[2]}`, borderRadius: borderRadius.md, background: ['COMPLETED', 'FINISHED'].includes(status) ? colors.successLight : status === 'FAILED' ? colors.dangerLight : colors.warningLight, color: ['COMPLETED', 'FINISHED'].includes(status) ? colors.success : status === 'FAILED' ? colors.danger : colors.warning, fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.semibold })
 const legacyBadge = { color: colors.textTertiary, fontSize: typography.fontSize.xs }
+const realCallBadge = { color: colors.success, fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.semibold }
 const empty = { padding: spacing[8], textAlign: 'center', background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: borderRadius.lg, color: colors.textSecondary }
 const errorStyle = { marginBottom: spacing[4], padding: spacing[3], background: colors.dangerLight, border: `1px solid ${colors.danger}`, borderRadius: borderRadius.md, color: colors.danger }
 const rowActions = { display: 'flex', gap: spacing[2], marginTop: spacing[3] }

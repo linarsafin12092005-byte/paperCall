@@ -1,0 +1,15 @@
+CREATE TABLE IF NOT EXISTS organizations (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(100) NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT ux_organizations_slug UNIQUE (slug)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO organizations (name, slug, active)
+SELECT 'PaperCall', 'papercall', TRUE
+WHERE NOT EXISTS (
+    SELECT 1 FROM organizations WHERE slug = 'papercall'
+);

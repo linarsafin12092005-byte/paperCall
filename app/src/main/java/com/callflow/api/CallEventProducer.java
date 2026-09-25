@@ -15,6 +15,8 @@ public class CallEventProducer {
     }
 
     public void send(CallEvent event) {
-        kafkaTemplate.send(TOPIC, event.getCallId() != null ? event.getCallId().toString() : "operator", event);
+        String key = event.getLinkedId() != null ? event.getLinkedId()
+                : event.getCallId() != null ? event.getCallId().toString() : "operator";
+        kafkaTemplate.send(TOPIC, key, event);
     }
 }
